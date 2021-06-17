@@ -1,0 +1,1116 @@
+---
+title: "2020 Singapore General Election Sentiments across Two Social Media Platforms"
+author: "David Tan & Fabian Kong"
+date: "02 August 2020"
+output:
+  html_document:
+    theme: flatly
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+```
+
+# 2020 Singapore General Election Sentiments across Two Social Media Platforms
+
+## Introduction
+
+The Parliament in Singapore may be dissolved before the expiry of its five-year term by the President on the advice of the Prime Minister. The general election must be held within three months of the Parliament's dissolution. There are two types of constituency or electoral division: single member constituency (SMC) and group representation constituency (GRC). SMC, as the name suggests, has only one member of parliament (MP), while GRC has three to six MPs. The GRC scheme was introduced in the 1988 general election to ensure that minority groups are represented in Parliament [^1].
+
+Below are the percentage of votes between incumbent and opposition, and of voters turnout for parliamentary general elections between 1988 (when GRC scheme is introduced) and 2020. Data for 2015 and earlier are scraped from Data.gov.sg using CKAN API while data for 2020 is scraped from Wikipedia (which is sourced from Elections Department Singapore and Channel News Asia) using `rvest` package.
+
+```{r message=FALSE, warning=FALSE, results='hide'}
+source("Tan_Kong-ge_results.R")
+ge_plot
+```
+
+Given that the incumbent party (PAP) has been governing since Singapore's independence, people may have negative sentiments towards the government and yearn for a change. This has led us to want to explore the public sentiments. Elections are tense periods for both the electorate and the election candidates. Emotions are often riled up as the electorate debate over the merits of their preferred candidates against that of others. Social media platforms are often host to these debates as people flock to voice their preferences through these channels. This is even more so during the pandemic as the election process is moved mostly online. The electorate reacts to different news and falsehoods pertaining to the candidates and political parties as a whole during the course of the election process.
+
+The election process consists of the following:
+
+1. Nomination Day - Prospective candidates submit their nomination documents and deposits between 11:00 am and 12:00 pm. If there is only one candidate or one group of candidates for SMC and GRC respectively, it will be declared that the candidate or the group of candidates have been elected as MP(s). This is known as walkover.
+
+2. Campaigning - Candidates can only campaign up to the start of Cooling-off Day.
+
+3. Cooling-off Day - This is the eve before Polling Day. Campaigning is prohibited, and the electorate is given some time to reflect on the issues raised before going to the polls.
+
+4. Polling Day - Electors will go to their allotted polling stations to cast their vote any time between 8:00 am to 8:00 pm. After the close of polls, ballot boxes will be sealed and transported to counting centres.
+
+For 2020 General Election, Nomination Day is 30 June 2020 and Polling Day is 10 July 2020 with nine days of campaigning. Therefore, Cooling-off Day is 9 July 2020. The COVID-19 pandemic has changed how an election is done in 2020. There are no public rallies, electors are encouraged to cast their votes within their two-hour time slot with safe distancing measures, and polling hours were extended until 10:00 pm.
+
+In our project the election process is split into three distinct phases:
+
+* First phase: Dissolution of Parliment Date to Nomination Date
+* Second phase: Day after Nomination Date to Polling Date
+* Third phase: Day after Polling Date to the subsequent day
+
+![Singapore Parlimentary General Election Process and its Phases](Tan_Kong-election.png)
+
+## Problem Statement
+
+In our project, we will be analysing the sentiments of the 2020 Singapore General Election across Reddit and Twitter:
+
+1.  Will there be differences in sentiments across social media platforms?
+
+2.	Will there be differences in sentiments across the election period?
+
+3.  Are there any differences in the sentiment of the words used to describe the incumbent party versus the opposition party?
+
+4.  How does the 2020 Singapore General Election compare to previous elections? Are there any differences in sentiments across the election process? The 2020 Singapore General Election will be compared to the 2015 Singapore General Election.
+
+For our data science project, we activated the following packages, using the `tidyverse` approach.
+
+```{r}
+# If a package is installed, it will be loaded. If not, missing package(s) will
+# be installed from CRAN and then loaded.
+
+# Specify packages
+packages <- c("RedditExtractoR", "rtweet", "tidyverse", "knitr", "tidytext", "lubridate", "ggrepel", "car", "ggpubr", "jtools", "huxtable", "haven", "broom", "modelr", "interactions", "WRS2", "rstatix", "shiny", "shinycssloaders")
+
+# Load or install then load all
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if(!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+
+# Check for loaded packages
+search()
+```
+
+## Import
+
+There are two sources for our data: (a) Reddit; and (b) Twitter.
+
+### Reddit
+
+We used the `get_reddit` function from the `RedditExtractoR` package on multiple occasions to scrape data from the Singapore subreddit. Each time, the output from the `get_reddit` function was saved as a RData file.
+
+```{r}
+#sg_reddit <- get_reddit(subreddit = "singapore", page_threshold = 500, wait_time = 5)
+```
+
+These RData files were subsequently merged together, with duplicate rows removed. An output is saved as a RDS file.
+
+```{r}
+#load("data/sg_reddit.RData")
+#load("data/sg_reddit2.RData")
+#load("data/sg_reddit3.RData")
+#load("data/sg_reddit5.RData")
+#load("data/reddit.RData")
+
+#reddits <- bind_rows(sg3, sg4, sg5, sg6, df) %>% 
+#    distinct()
+
+#saveRDS(reddits, "data/reddits.rds")
+```
+
+### Twitter
+
+Twitter was scraped each day from 23 June to 12 July 2020 using the following lines of code, and the output was saved in a csv file. To cover as much tweets on elections as possible, search terms on the few common election hashtags, and all tweets from Singapore are used.
+
+```{r}
+# Load Twitter API credentials
+#source("script/twitter_api.R")
+
+# Daily between 2020-06-23 to 2020-07-12
+#today_dat = Sys.Date()
+#yday_dat = Sys.Date() - 1
+
+#df_sgelections <- search_tweets(q = "#ge2020 OR #sgvotes OR #sgelections OR #sgelection",
+#                                n = 500000,
+#                                lang = "en",
+#                                since = yday_dat,
+#                                until = today_dat,
+#                                include_rts = F,
+#                                retryonratelimit = T)
+
+#save_as_csv(df_sgelections, paste("data/sgelections_", yday_dat, ".csv", sep = ""),
+#            prepend_ids = TRUE, na = "", fileEncoding = "UTF-8")
+
+#df_sgtweets <- search_tweets(n = 500000,
+#                             lang = "en",
+#                             since = yday_dat,
+#                             until = today_dat,
+#                             include_rts = F,
+#                             geocode = lookup_coords("singapore"),
+#                             retryonratelimit = T)
+```
+
+The individual csv files were loaded and then merged together, with the outputs saved as RDS files.
+
+```{r}
+#sgelections0623 <- read_csv("data/sgelections_2020-06-23.csv")
+#sgelections0624 <- read_csv("data/sgelections_2020-06-24.csv")
+#sgelections0625 <- read_csv("data/sgelections_2020-06-25.csv")
+#sgelections0626 <- read_csv("data/sgelections_2020-06-26.csv")
+#sgelections0627 <- read_csv("data/sgelections_2020-06-27.csv")
+#sgelections0628 <- read_csv("data/sgelections_2020-06-28.csv")
+#sgelections0629 <- read_csv("data/sgelections_2020-06-29.csv")
+#sgelections0630 <- read_csv("data/sgelections_2020-06-30.csv")
+#sgelections0701 <- read_csv("data/sgelections_2020-07-01.csv")
+#sgelections0702 <- read_csv("data/sgelections_2020-07-02.csv")
+#sgelections0703 <- read_csv("data/sgelections_2020-07-03.csv")
+#sgelections0704 <- read_csv("data/sgelections_2020-07-04.csv")
+#sgelections0705 <- read_csv("data/sgelections_2020-07-05.csv")
+#sgelections0706 <- read_csv("data/sgelections_2020-07-06.csv")
+#sgelections0707 <- read_csv("data/sgelections_2020-07-07.csv")
+#sgelections0708 <- read_csv("data/sgelections_2020-07-08.csv")
+#sgelections0709 <- read_csv("data/sgelections_2020-07-09.csv")
+#sgelections0710 <- read_csv("data/sgelections_2020-07-10.csv")
+#sgelections0711 <- read_csv("data/sgelections_2020-07-11.csv")
+#sgelections0712 <- read_csv("data/sgelections_2020-07-12.csv")
+
+#sgelections <- bind_rows(
+#    sgelections0623, sgelections0624, sgelections0625, sgelections0626, sgelections0627,
+#    sgelections0628, sgelections0629, sgelections0630, sgelections0701, sgelections0702,
+#    sgelections0703, sgelections0704, sgelections0705, sgelections0706, sgelections0707,
+#    sgelections0708, sgelections0709, sgelections0710, sgelections0711, sgelections0712)
+
+#saveRDS(sgelections, "data/sgelections.rds")
+
+# Merge Singapore datasets
+#sgtweets0623 <- read_csv("data/sgtweets_2020-06-23.csv")
+#sgtweets0624 <- read_csv("data/sgtweets_2020-06-24.csv")
+#sgtweets0625 <- read_csv("data/sgtweets_2020-06-25.csv")
+#sgtweets0626 <- read_csv("data/sgtweets_2020-06-26.csv")
+#sgtweets0627 <- read_csv("data/sgtweets_2020-06-27.csv")
+#sgtweets0628 <- read_csv("data/sgtweets_2020-06-28.csv")
+#sgtweets0629 <- read_csv("data/sgtweets_2020-06-29.csv")
+#sgtweets0630 <- read_csv("data/sgtweets_2020-06-30.csv")
+#sgtweets0701 <- read_csv("data/sgtweets_2020-07-01.csv")
+#sgtweets0702 <- read_csv("data/sgtweets_2020-07-02.csv")
+#sgtweets0703 <- read_csv("data/sgtweets_2020-07-03.csv")
+#sgtweets0704 <- read_csv("data/sgtweets_2020-07-04.csv")
+#sgtweets0705 <- read_csv("data/sgtweets_2020-07-05.csv")
+#sgtweets0706 <- read_csv("data/sgtweets_2020-07-06.csv")
+#sgtweets0707 <- read_csv("data/sgtweets_2020-07-07.csv")
+#sgtweets0708 <- read_csv("data/sgtweets_2020-07-08.csv")
+#sgtweets0709 <- read_csv("data/sgtweets_2020-07-09.csv")
+#sgtweets0710 <- read_csv("data/sgtweets_2020-07-10.csv")
+#sgtweets0711 <- read_csv("data/sgtweets_2020-07-11.csv")
+#sgtweets0712 <- read_csv("data/sgtweets_2020-07-12.csv")
+
+#sgtweets <- bind_rows(
+#    sgtweets0623, sgtweets0624, sgtweets0625, sgtweets0626, sgtweets0627,
+#    sgtweets0628, sgtweets0629, sgtweets0630, sgtweets0701, sgtweets0702,
+#    sgtweets0703, sgtweets0704, sgtweets0705, sgtweets0706, sgtweets0707,
+#    sgtweets0708, sgtweets0709, sgtweets0710, sgtweets0711, sgtweets0712)
+
+#saveRDS(sgtweets, "data/sgtweets.rds")
+```
+
+## Tidy & Transform
+
+Datasets are loaded from RDS files.
+
+```{r}
+# Reddit
+reddits <- readRDS("Tan_Kong-reddits.rds")
+
+# Twitter
+sgelections <- readRDS("Tan_Kong-sgelections.rds")
+sgtweets <- readRDS("Tan_Kong-sgtweets.rds")
+```
+
+### Reddit
+
+First, we extracted out only the columns we required. We renamed the `comm_date` column to `date` while converting it to date data type since it was incorrectly read as character data type.
+
+```{r}
+reddits <- reddits %>% 
+  mutate(date = dmy(comm_date)) %>% 
+  select(date, comment)
+```
+
+The following shows the Reddit raw dataset:
+
+```{r}
+glimpse(reddits)
+```
+
+The Reddit data contains threads on all manner of subjects. Using regular expressions, we extracted out rows that include comments on election-related information only. All comments were converted to lowercase. 
+
+```{r}
+reddits <- reddits %>% 
+  filter_at(vars(comment), 
+            any_vars(str_detect(comment, "election|^GE[[:blank:]]|GE2020|voting|polling|nomination|manifesto"))) %>% 
+  mutate(comment = str_to_lower(comment))
+```
+
+Next, we created variables called `period_2015` and `period_2020` that splits the election process into three distinct phases for the 2015 and 2020 General Elections, respectively.
+
+```{r}
+reddits <- reddits %>% 
+  mutate(period_2015 = case_when(
+    between(date, as_date("2015-08-25"), as_date("2015-09-01")) ~ "first phase",
+    between(date, as_date("2015-09-02"), as_date("2015-09-11")) ~ "second phase",
+    between(date, as_date("2015-09-12"), as_date("2015-09-13")) ~ "third phase"), 
+         period_2020 = case_when(
+           between(date, as_date("2020-06-23"), as_date("2020-06-30")) ~ "first phase",
+           between(date, as_date("2020-07-1"), as_date("2020-07-10")) ~ "second phase",
+           between(date, as_date("2020-07-11"), as_date("2020-07-12")) ~ "third phase"))
+```
+
+Using regular expressions from eye-balling the comment data, assign comments containing words related to the incumbent party and opposition parties to their respective parties.
+
+```{r}
+reddits <- reddits %>% 
+  mutate(pol_party = case_when(
+    str_detect(comment, paste0("lhl|lee hsien loong|goh chok tong|pap|ccs|tcj|",
+                               "murali|lky|sun xueling|ib|incumbent|ruling party|",
+                               "loong|kate spade|tpl|george yeo|lim hwee hwa|",
+                               "jo teo|joteo|hsk|yacob|ivan|masagos|halimah|mr lee")) ~ "incumbent",
+    str_detect(comment, paste0("nicole|jamus|wp|ltk|chiam|cst|pritam|kj|opp|nsp|",
+                               "chee|people's voice|pv|csj|sylvia|jeanette|",
+                               "lim tean|tambyah|sdp|chia|psp|workers party|aljunied")) ~ "opposition"))
+```
+
+Next, we unnest the comments into tokens (individual words), with each row consisting of a single token. Stop words, which are common words not helpful for analysis, are then removed. Rows the lacked a value for the `period_2015`, `period_2020`, and `pol_party` variables are removed
+
+```{r}
+reddit_tc <- reddits %>% 
+  unnest_tokens(output = word, input = comment) %>% 
+  anti_join(stop_words) %>%
+  filter(!is.na(period_2015) | !is.na(period_2020)) %>% 
+  filter(!is.na(pol_party))
+```
+
+In the final step, we attached the `afinn`, `nrc`, and `bing` sentiment dictionaries to the data frame. Rows without any values from the three lexicons are dropped.
+
+```{r}
+reddit_sentiments <- reddit_tc %>% 
+  left_join(get_sentiments("afinn"), by = "word") %>% 
+  left_join(get_sentiments("nrc"), by = "word") %>% 
+  left_join(get_sentiments("bing"), by = "word") %>% 
+  rename(afinn_value = value, nrc_sentiment = sentiment.x, bing_sentiment = sentiment.y) %>% 
+  drop_na(afinn_value:bing_sentiment) %>% 
+  arrange(date)
+```
+
+### Twitter
+
+The Twitter data consists of two data frames: (a) Singapore election tweets; and (b) Singapore tweets. Election-related posts are filtered from Singapore tweets. Both the Singapore election tweets and Singapore tweets are merged together and duplicates removed. Using regular expression, terms that are not related to Singapore elections are removed. After which, variables that are needed for analysis are selected.
+
+```{r}
+# Filter election-related posts from Singapore tweets
+sgtweets <- bind_rows(
+  sgtweets %>% filter(str_detect(text, "election|^GE[[:blank:]]|GE2020|voting|polling|nomination|manifesto")),
+  sgtweets %>% filter(str_detect(text, "ge2020|sgvotes|sgelections|sgelection")),
+  sgtweets %>% filter(str_detect(hashtags, "election|^GE[[:blank:]]|GE2020|voting|polling|nomination|manifesto")),
+  sgtweets %>% filter(str_detect(hashtags, "ge2020|sgvotes|sgelections|sgelection")))
+
+# Merge filtered Singapore and election-tagged tweets
+tweets <- bind_rows(sgtweets, sgelections) %>% 
+  distinct()
+
+# Exclude tweets not related to Singapore and elections
+tweets <- tweets %>% 
+  filter(!str_detect(text, regex(paste0("malaysia|mahathir|muhyiddin|",
+                                        "trump|biden|pence|sanders|republican|",
+                                        "us election|clinton|congress|",
+                                        "china|poland|french|tokyo|ardern|",
+                                        "modi|delhi|boris|brexit|ireland|",
+                                        "kang daniel|kangdaniel|bts_twt|",
+                                        "btsvotingorg|henggarae|monstax|exo"),
+                                 ignore_case = TRUE))) %>% 
+  select(status_id, created_at, screen_name, text, name, location)
+```
+
+The following shows the Twitter raw dataset:
+
+```{r}
+glimpse(tweets)
+```
+
+Similar to what was done for the Reddit data, we created the `period` variable to split the election process to three phases. Since there is a limitation to what we can scrape from Twitter, only 2020 tweets are available.
+
+```{r}
+tweets <- tweets %>% 
+  mutate(date = as_date(created_at)) %>% # Convert datetime to date
+  filter(date >= as_date("2020-06-23") & date <= as_date("2020-07-12")) %>% 
+  mutate(period_2020 = case_when(
+    between(date, as_date("2020-06-23"), as_date("2020-06-30")) ~ "first phase",
+    between(date, as_date("2020-07-01"), as_date("2020-07-10")) ~ "second phase",
+    between(date, as_date("2020-07-11"), as_date("2020-07-12")) ~ "third phase"))
+```
+
+Tweets are further categorised to incumbent and opposition parties using regular expressions. More expressions are added for the 10 opposition parties to balance the number of tweets related to each group, and to cover as much opposition tweets as possible. `screen_name` variable from the Twitter data is also used to group the tweets.
+
+```{r}
+# Group posts into incumbent-related and opposition-related based on text contents
+tweets <- tweets %>%
+  mutate(pol_party = case_when(
+    str_detect(text, regex(paste0("lhl|lee hsien loong|goh chok tong|pap|ccs|tcj|",
+                                  "murali|lky|sun xueling|ib|incumbent|ruling party|",
+                                  "loong|kate spade|tpl|george yeo|lim hwee hwa|",
+                                  "jo teo|joteo|hsk|yacob|ivan|masagos|halimah|mr lee"),
+                           ignore_case = TRUE)) ~ "incumbent",
+    str_detect(text, regex(paste0("nicole|jamus|wp|ltk|chiam|cst|pritam|kj|opp|nsp|",
+                                  "chee|people's voice|pv|csj|sylvia|jeanette|",
+                                  "lim tean|tambyah|sdp|chia|psp|workers party|aljunied|",
+                                  "sdp|singapore democratic party|psp|progress singapore party|",
+                                  "wp|workers party|workers' party|ppp|people's power party|",
+                                  "pv|peoples voice|people's voice|spp|singapore people's party|",
+                                  "rp|reform party|rdu|red dot united|hammer|hypebeast|",
+                                  "RedDotUnited|ProgressSgParty|thereformparty|workersparty|",
+                                  "raeesah|cheng bok|tcb|jeyaretnam"),
+                                  ignore_case = TRUE)) ~ "opposition"))
+
+# Group posts into incumbent-related and opposition-related based on screen name
+tweets <- tweets %>% 
+  mutate(pol_party = if_else(
+    screen_name %in% c("PAPSingapore", "VivianBala"), 
+    "incumbent", if_else(
+      screen_name %in% c("thereformparty", "wpsg", "ProgressSgParty", "KenJeyaretnam", "TanChengBock", "SPP_SG"),
+      "opposition", pol_party)))
+```
+
+We unnest the texts from the individual tweets into tokens, just like Reddit comments. Stop words are removed thereafter. Common Twitter characters that are not useful in analysis (e.g. hashtags, mentions, hyperlinks) are excluded as well.
+
+```{r}
+tweets_tc <- tweets %>% 
+  unnest_tokens(word, text, token = "tweets") %>% # Tokenisation
+  group_by(word) %>% 
+  #filter(n() >= 15) %>% # Filter tweets with < 15 words
+  ungroup() %>% 
+  anti_join(stop_words) %>% 
+  filter(!str_detect(word, "^#\\w+$")) %>% # Exclude # hashtags
+  filter(!str_detect(word, "^@\\w+$")) %>% # Exclude @ mentions
+  filter(!str_detect(word, "([0-9]|10)")) %>% # Exclude numbers 0-10
+  filter(!str_detect(word, "https\\w$")) %>% # Exclude hyperlinks
+  filter(!str_detect(word, fixed("amp"))) %>% # Exclude "amp"
+  filter(!str_detect(word, "[\r\n]")) %>% # Exclude special metacharacters
+  filter(!str_detect(word, "^\\$+")) %>% # Exclude $ and $*
+  filter(!str_detect(word, "^\\<[Uu]\\+")) # Exclude unicode characters
+```
+
+Rows that do not have values for `pol_party` are removed. `period` was checked to have values for every row. We generated sentiments using `afinn`, `nrc` and `bing` dictionaries to the data table.
+
+```{r}
+tweets_sentiments <- tweets_tc %>% 
+  select(status_id, created_at, date, period_2020, pol_party, word) %>% 
+  filter(!is.na(pol_party)) %>%
+  inner_join(get_sentiments("afinn"), by = "word") %>% 
+  inner_join(get_sentiments("nrc"), by = "word") %>% 
+  inner_join(get_sentiments("bing"), by = "word") %>% 
+  rename(afinn_value = value, nrc_sentiment = sentiment.x, bing_sentiment = sentiment.y) %>% 
+  arrange(created_at)
+```
+
+### Merging Reddit & Twitter
+
+First, we removed the `status_id` and `created_at` columns from the `tweets_sentiments` data frame. We then renamed the `period` column to `period_2020` to align it with the `reddit` data frame. This is followed by creating a blank column called `period_2015` and re-arranging the colums to match the `reddit` data frame.
+
+```{r}
+tweets_sentiments <- tweets_sentiments %>%
+  select(-(status_id:created_at)) %>%
+  mutate(period_2015 = NA) %>%
+  select(date, period_2015, everything())
+```
+
+Next, the `platform` variable was created to indicate which platform (Reddit or Twitter) a given observation belongs to. This was done separately for each dataset.
+
+```{r}
+reddit <- reddit_sentiments %>% 
+  mutate(platform = "reddit") %>% 
+  select(date, platform, everything())
+
+twitter <- tweets_sentiments %>%
+    mutate(platform = "twitter") %>%
+    select(date, platform, everything())
+```
+
+Finally, both Reddit and Twitter data were merged together, and the final `df` data will be used for exploratory and analysis.
+
+```{r}
+df <- bind_rows(reddit, twitter)
+glimpse(df)
+```
+
+## Explore and Visualise
+
+### Chatter plots
+
+Chatter plots were used to display the most frequently occurring words against their emotional valence [^2]. 
+
+#### Reddit
+
+Only 2020 data are selected for Reddit in order to be comparable with Twitter.
+
+```{r message=FALSE}
+reddit_freq <- reddit %>%
+  filter(year(date) == 2020) %>%
+  count(word) %>% 
+  distinct()
+
+reddit_afinn <- reddit %>%
+  filter(year(date) == 2020) %>% 
+  select(word, afinn_value) %>%
+  distinct()
+
+reddit_top50 <- left_join(reddit_freq, reddit_afinn, by = "word") %>%
+  arrange(desc(n)) %>%
+  top_n(50)
+
+reddit_top50 %>% 
+  ggplot(aes(x = afinn_value, y = n, label = word)) +
+    geom_text_repel(segment.alpha = 0, aes(colour = afinn_value, size = n)) +
+    scale_color_gradient(low = "firebrick1", high = "deepskyblue2") +
+    labs(title = "Singapore Parliamentary General Election 2020",
+          subtitle = "Top 50 Words and Their Sentiments from Subreddit r/Singapore",
+          x = "Sentiment",
+          y = "Count", 
+          color = "Sentiment", 
+          size = "Counts",
+          caption = "Source: Reddit") +
+    theme(legend.justification = c("right", "top"))
+```
+
+Interestingly, the top 50 words from Reddit are all positive.
+
+#### Twitter
+
+```{r}
+# Word sentiments
+twitter_freq <- twitter %>% 
+    count(word)
+
+twitter_sent <- twitter %>% 
+    select(word, afinn_value) %>% 
+    distinct()
+
+# Joint frequencies and sentiments and extract top 50 most frequently used words
+twitter_top50 <- left_join(twitter_freq, twitter_sent, by = "word") %>% 
+    arrange(desc(n)) %>% 
+    slice(1:50)
+
+# Plot
+twitter_top50 %>%
+  ggplot(aes(x = afinn_value, y = n, label = word)) +
+  geom_text_repel(segment.alpha = 0, aes(color = afinn_value, size = n)) +
+  scale_color_gradient(low = "firebrick1", high = "deepskyblue2") +
+  labs(title = "Singapore Parliamentary General Election 2020",
+       subtitle = "Top 50 Words and Their Sentiments from Twitter",
+       x = "Sentiment",
+       y = "Count",
+       color = "Sentiment",
+       size = "Count",
+       caption = "Source: Twitter") +
+  theme(legend.justification = c("right", "top"))
+```
+
+Twitter has top 50 words that have more balanced sentiments between positive and negative compared to Reddit.
+
+Both have the most word used in the posts - "winning". The context of this most used word is likely on the hope in winning the constituency the candidates that are contesting in. Moving later into the election process, the winning candidates would be happy, and the democracy in Singapore has made progress with the official appointment of the Leader of the Opposition [^3]. Both words "happy" and "progress" are the other top few positive words in Twitter.
+
+In contrast, the top few most negative words in Twitter are "bad", "lost" and "disappointed". These words are likely due to candidates that are hopeful to win but did not in the end. This may also be related to another GRC lost by the incumbent [^4].
+
+### Comparison between Three Sentiment Dictionaries
+
+#### Reddit
+```{r message=FALSE}
+reddit_afinn <- reddit_tc %>% 
+  filter(year(date) == 2020) %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  group_by(index = factor(date)) %>% 
+  summarise(sentiment = mean(value)) %>% 
+  mutate(method = "AFINN")
+
+reddit_bing_nrc <- bind_rows(reddit_tc %>%
+                               filter(year(date) == 2020) %>%
+                               inner_join(get_sentiments("bing")) %>%
+                               mutate(method = "Bing et al."),
+                             reddit_tc %>%
+                               filter(year(date) == 2020) %>% 
+                               inner_join(get_sentiments("nrc") %>%
+                                            filter(sentiment %in% c("positive", "negative"))) %>%
+                               mutate(method = "NRC")) %>%
+  count(method, index = factor(date), sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+bind_rows(reddit_afinn, reddit_bing_nrc) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Singapore Parlimentary General Election 2020",
+       subtitle = "Comparison between Three Sentiment Dictionaries across Election Period",
+       x = "Date",
+       y = "Sentiment",
+       caption = "Source: Reddit")
+```
+
+#### Twitter
+
+```{r message=FALSE}
+twitter_afinn <- tweets_tc %>%
+  inner_join(get_sentiments("afinn")) %>%
+  group_by(index = factor(date)) %>%
+  summarise(sentiment = mean(value)) %>%
+  mutate(method = "AFINN")
+
+twitter_bing_nrc <- bind_rows(tweets_tc %>%
+                                inner_join(get_sentiments("bing")) %>%
+                                mutate(method = "Bing et al."),
+                              tweets_tc %>%
+                                inner_join(get_sentiments("nrc") %>%
+                                             filter(sentiment %in% c("positive", "negative"))) %>%
+                                mutate(method = "NRC")) %>%
+  count(method, index = factor(date), sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+bind_rows(twitter_afinn, twitter_bing_nrc) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Singapore Parlimentary General Election 2020",
+       subtitle = "Comparison between Three Sentiment Dictionaries across Election Period",
+       x = "Date",
+       y = "Sentiment",
+       caption = "Source: Twitter")
+```
+
+Comparing between Reddit and Twitter datasets, Twitter has generally more positive sentiments. This is possibly due to news snippets and links that are posted by news agencies. The contents are tend to be more positive regardless of which party are they on. Reddit has more texts per post, and therefore giving more weightage to negative words.
+
+### Sentiment plots between incumbent and opposition (AFINN lexicon)
+
+#### Reddit
+
+```{r message=FALSE}
+reddit_sentiments %>% 
+  filter(year (date) == 2020) %>% 
+  group_by(date, pol_party) %>% 
+  summarise(n = n(), value = round(mean(afinn_value), 2)) %>% 
+  ggplot(aes(x = date, y = value, group = pol_party, col = pol_party)) + 
+  geom_line() + 
+  facet_wrap(~ pol_party) + 
+  labs(title = "Singapore Parlimentary General Election 2020",
+       subtitle = "Sentiment across Election Process based on AFINN Lexicon",
+       x = "Date",
+       y = "Mean Sentiment",
+       color = "Political Party",
+       caption = "Source: Twitter") +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom") +
+  scale_x_date(date_breaks = "day") + 
+  scale_color_manual(values = c("deepskyblue2", "firebrick1"))
+```
+
+#### Twitter
+
+```{r message=FALSE}
+tweets_sentiments %>% 
+  group_by(date, pol_party) %>% 
+  summarise(n = n(), value = round(mean(afinn_value), 2)) %>% 
+  ggplot(aes(x = date, y = value, group = pol_party, col = pol_party)) + 
+  geom_line() + 
+  facet_wrap(~ pol_party) + 
+  labs(title = "Singapore Parlimentary General Election 2020",
+       subtitle = "Sentiment across Election Process based on AFINN Lexicon",
+       x = "Date",
+       y = "Mean Sentiment",
+       color = "Political Party",
+       caption = "Source: Twitter") + 
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom") + 
+  scale_x_date(date_breaks = "day") + 
+  scale_color_manual(values = c("deepskyblue2", "firebrick1"))
+```
+
+Based on the AFINN sentiment plots, the trend for the opposition is generally similar between Reddit and Twitter with a dip to negative between 4 and 5 July. This is probably due to the police investigation on Workers' Party candidate Raeesah Khan over alleged online comments on race and religion [^5]. There is also a dip to negative for the incumbent party in Twitter, due to the withdrawal of PAP candidate Ivan Lim after allegations about his past conduct and behaviour [^6]. 
+
+### Sentiment plots between incumbent and opposition (NRC lexicon)
+
+In the previous examples, we used the `afinn` lexicon for data visualisation. In this section, we will be using the `NRC` lexicon. The `NRC` lexicon conceptualizes sentiments not along a continuum, but as discrete categories such as sadness, disgust, fear, anger, etc. Due to the presence of multiple categories, we used a Shiny app to provide readers/users with the freedom to visualise each sentiment at their own pace.
+
+The results appear roughly similar across all 10 sentiment categories, with comments made concerning the incumbent party experiencing a large spike near the end of the second phase and throughout the third phase. In contrast, there are two trends associated with the opposition parties. For the negative, sadness, disgust, fear, and anger sentiments, there was a smaller spike at the end of the second phase/start of the third phase relative to the much larger spikes of the positive, anticipation, joy, surprise, and trust sentiments across the same instance.
+
+```{r}
+# Define UI for application that draws a line chart for each sentiment
+ui <- fluidPage(
+   
+   # Application title
+   titlePanel("NRC Lexicon for Sentiments"),
+   
+   # Sidebar with select input for selecting sentiment
+   sidebarLayout(
+      sidebarPanel(
+         selectInput("sentiment",
+                     "Sentiment", choices = unique(df$nrc_sentiment))
+      ),
+      
+      # Display line chart for a particular sentiment
+      mainPanel(
+         withSpinner(plotOutput("sentiment_plot"))
+      )
+   )
+)
+
+# Define server logic required to draw a line chart for sentiment
+server <- function(input, output) {
+  
+  # Filter by sentiment and store output in reactive object
+  filtered_df <- reactive({
+    
+    df %>%
+      select(date, platform, period_2020, pol_party, nrc_sentiment) %>%
+      filter(!is.na(period_2020)) %>%
+      filter(nrc_sentiment == input$sentiment) %>%
+      group_by(date, platform, pol_party, nrc_sentiment) %>%
+      count()
+  })
+  
+  # plot reactive object and render object
+  output$sentiment_plot <- renderPlot(
+    
+    filtered_df() %>%
+      ggplot(aes(x = date, y = n, col = pol_party)) + geom_line() +
+      labs(title = paste0(str_to_sentence(input$sentiment), 
+                          " Sentiment between Political Parties across the Election Timeline"),
+           x = "Date", 
+           y = "Count",
+           col = "Political Parties",
+           caption = "Source: Reddit r/Singapore & Twitter") +
+      scale_x_date(date_breaks = "day") +
+      theme(axis.line = element_line(colour = "darkblue", 
+                                     size = 1, linetype = "solid"),
+            axis.text.x = element_text(angle = 45, hjust = 1))
+  )
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+```
+
+## Model
+
+### Assumption Check
+
+Before running a three-way between-groups ANOVA model, one has to ensure that the following assumptions have been met:
+
+* Dependent variable is measured on a continuous scale
+* Independent variables are measured on a categorical scale
+* Independence of observations
+* Absence of significant outliers
+* Dependent variable approximately normal for each combination of the independent variables
+* Homogeneity of variance for each combination of the independent variables
+
+The first two assumptions have been met. The dependent variable `afinn_value` is measured on a continuous scale. The independent variables of `platform`, `period_2020`, and `pol_party` are categorical variables.
+
+The third assumption, independence of observations, cannot be ascertained. It would not be possible for us to know whether a given Twitter account would have posted under a different username on Reddit or vice versa.
+
+Significant outliers could be identified with the boxplots of `afinn_value` for each combination of independent variables. The results show that there are no outliers in our dataset. This is expected since `afinn_value` is between -5 and 5.
+
+```{r}
+df %>%
+  filter(!is.na(period_2020)) %>%
+  ggplot(aes(x = period_2020, y = afinn_value, fill = pol_party)) + geom_boxplot() +
+  labs(title = "Boxplots of each combination of independent variables",
+       y = "sentiment",
+       x = "Phase", 
+       fill = "Political Party") +
+  facet_grid(~platform) +
+  theme_classic()
+
+```
+
+The `identify_outlier` function from the `rstatix` package could also be used to identify outliers by group. Similar to the boxplots, the results showed that there are no outliers in our dataset.
+
+```{r}
+df %>%
+  filter(!is.na(period_2020)) %>%
+  identify_outliers(afinn_value)
+```
+
+Next, we used Q-Q plots to identify whether the `afinn_value` variable is normally distributed for each combination of independent variables. As the data points do not fall along the the reference line, the assumption for normality has been violated.
+
+```{r}
+df %>%
+  filter(!is.na(period_2020)) %>%
+  ggqqplot(., "afinn_value", facet.by = c("pol_party", "platform")) + 
+  labs(title = "Q-Q Plots")
+```
+
+Levene's Test for Homogeneity of Variance was conducted on the dataset. The assumption for homogeneity was violated.
+
+```{r}
+df %>%
+  leveneTest(afinn_value ~ as.factor(pol_party) * as.factor(period_2020) * as.factor(pol_party), data = .) %>%
+  tidy()
+```
+
+ANOVA models remain robust even if the assumption of homogeneity of variance is violated. Robustness is dependent on the sample sizes across groups [^7]. In our case, the sample sizes across groups are not similar to one another. Hence, we have to use a non-parametric equivalent to the 3-way between-groups ANOVA.
+
+```{r}
+df %>%
+  filter(!is.na(period_2020)) %>%
+  group_by(platform, period_2020, pol_party) %>%
+  count()
+```
+
+### ANOVA
+
+Functions from the `WRS2` package will be used for the subsequent modelling process as our assumption of homogeneity has been violated. The package offers robust ANOVA for situations such as ours.
+
+The `t3way` function from the `WRS2` package was used as a robust 3-Way Between-Groups ANOVA alternative [^8]. The results showed that there was a significant three-way interaction between `platform`, `period_2020`, and `pol_party`, p = 0.0010.
+
+There was a significant two-way interaction between `platform` and `period_2020`, p = 0.0270. There was a significant two-way interaction between `platform` and `pol_party`, p = 0.0010. There was no significant interaction between `period_2020` and `pol_party`.
+
+There was a significant main effect of `platform` on `afinn_value`, p = 0.0001. There was a significant main effect of `period_2020` on `afinn_value`, p = 0.0001. There was a significant main effect of `pol_party` on `afinn_value`, p = 0.0010.
+
+```{r}
+anova.model <- t3way(afinn_value ~ as.factor(platform) * as.factor(period_2020) * as.factor(pol_party), data = df)
+anova.model
+```
+
+### Post-hoc tests
+
+A significant three-way interaction could be followed up with the following post-hoc tests [^9]:
+
+* Two-way interaction at each level of the third variable
+* Main effects of each variable
+* Pairwise comparisons of each variable that has more than two levels (e.g. `period_2020`)
+
+A three-way interaction suggests that one, or more, two-way interactions differ across the levels of a third variable [^10]. In our case, it could mean that there are differences in the interaction of `period_2020` and `platform` at each level of `pol_party`. We could visualise the three-way interaction as follows. From eye-balling the plot, comments made on Twitter were generally more positive than on Reddit, with comments made specifically on the oppositional parties more positive relative to the incumbent party.
+
+```{r message=FALSE}
+df %>%
+  filter(!is.na(period_2020)) %>%
+  group_by(pol_party, platform, period_2020) %>%
+  summarize(afinn_value = mean(afinn_value)) %>%
+  ggplot(aes(x = period_2020, y = afinn_value, group = platform, col = platform)) +
+  geom_line() +
+  geom_point() +
+  facet_grid(~pol_party) + 
+  labs(title = "Visualising three-way interactions",
+       x = "Period",
+       y = "Sentiment", 
+       col = "Political Party")
+```
+
+We then subset the data frame by the `pol_party` variable and conduct separate two-way ANOVAs, for each `pol_party`. There was a significant interaction between `period_2020` and `platform`, p = 0.005 for the Incumbent party. Similarly, there was a significant interaction between the same two variables for the Opposition party, p = 0.001. This suggests that at certain phases, sentiment levels differ across platforms. From our above visualisation, it can be observed that the second phase has the lowest sentiment across all four groups (Incumbent party and Reddit platform; Incumbent party and Twitter platform; Opposition party and Reddit platform; Opposition Part and Twitter Platform).
+
+```{r}
+split_incumbent <- df %>%
+  filter(!is.na(period_2020)) %>%
+  filter(pol_party == "incumbent") %>%
+  t2way(afinn_value ~ as.factor(period_2020) * as.factor(platform), data = .)
+split_incumbent
+
+split_opposition <- df %>%
+  filter(!is.na(period_2020)) %>%
+  filter(pol_party == "opposition") %>%
+    t2way(afinn_value ~ as.factor(period_2020) * as.factor(platform), data = .)
+split_opposition
+```
+
+Finally, we look at the main effects to determine the effect of individual variables on `afinn_value`. As the `period_2020` variables consists of three levels, pairwise comparisons were made at an $\alpha$ of 0.05/12 as we have 12 groups in all. The results showed that there is a significant difference between all three pairs. The line chart below shows that all 3 phases are marked by negative sentiments, with later phases being more negative than the earlier phases.
+
+```{r message=FALSE}
+# t1way(afinn_value ~ platform, data = df)
+# t1way(afinn_value ~ period_2020, data = df)
+# t1way(afinn_value ~ pol_party, data = df)
+
+lincon(afinn_value ~ period_2020, data = df, alpha = 0.004166667)
+
+df %>%
+  filter(!is.na(period_2020)) %>%
+  group_by(period_2020) %>%
+  summarize(afinn_value = mean(afinn_value)) %>%
+  ggplot(aes(x = period_2020, y = afinn_value, group = 1)) +
+  geom_line(color = "deepskyblue4", size = 0.75) +
+  geom_point(color = "deepskyblue4") + 
+  labs(x = "Period",
+       y = "Sentiment",
+       title = "Change in Mean Sentiment Across the three phases") +
+  theme_classic()
+
+```
+
+### Logistic Regression
+
+To investigate `bing` sentiment data, logistic regression was used to take a look at the main effects and if there are interactions that lead to how positive or negative the sentiments are. Categorical variables are converted to binary or integers.
+
+```{r}
+df_log <- df %>%
+  filter(year(date) == 2020) %>%
+  mutate(twitter = ifelse(platform == "reddit", 0, 1),
+           period = ifelse(period_2020 == "first phase", 1, ifelse(period_2020 == "second phase", 2, 3)),
+           opposition = ifelse(pol_party == "incumbent", 0, 1),
+           bing = ifelse(bing_sentiment == "negative", 0, 1)) %>%
+  select(twitter, period, opposition, bing)
+```
+
+#### Main effects
+
+The main effects are clearly significant with each independent variable (i.e. `platform`, `period` and `pol_party`) contributing to the model. Reddit (`twitter = 0`) is slightly more negative than Twitter (`twitter = 1`), while Opposition has more positive sentiments than Incumbent in either social media platforms. The sentiments generally became gradually negative across the election period.
+
+```{r}
+logistic_mainE <- glm(bing ~ twitter + period + opposition, 
+                      data = df_log, family = binomial(link = "logit"))
+
+tidy(logistic_mainE)
+
+fig1 <- df_log %>% 
+  data_grid(period, twitter, opposition) %>% 
+  mutate(pred = predict(logistic_mainE, ., type = "response"))
+
+ggplot(data = df_log, aes(x = period, y = bing)) + 
+  geom_point(alpha = .05, col = "deepskyblue3") + 
+  geom_point(data = fig1, aes(y = pred, color = opposition), size = 1) + 
+  labs(x = "Period", y = "Probability of Positive bing Sentiment") + 
+  facet_grid(~twitter)
+```
+
+#### Interaction effects
+
+We explore the interactions between two dummy variables: `twitter` and `opposition`. From the output, the interaction effect between the two variables is significant (p = 0.005).
+
+```{r}
+logistic_interactE <- glm(bing ~ twitter * opposition + period, 
+                      data = df_log, family = binomial(link = "logit"))
+
+tidy(logistic_interactE)
+```
+
+#### Model comparison
+
+Main effects and interaction effects models are compared. It shows that Model 2 (Interaction Effects Model) is slightly better than Model 1 (Main Effects Model).
+
+```{r}
+export_summs(logistic_mainE, logistic_interactE,
+             modemodel.names = c("Main Effects Only", "Platform * Period"),
+             error_format = "(p = {p.value})",
+             digits = 3)
+
+anova(logistic_mainE, logistic_interactE, test = "LR")
+```
+
+#### Probing interactions
+
+The first interaction model is visualised, and simple slopes analysis is performed.
+
+```{r}
+interact_plot(logistic_interactE, pred = "opposition", modx = "twitter",
+              modx.labels = c("Reddit", "Twitter"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("orange", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform")
+
+sim_slopes(logistic_interactE, pred = opposition, modx = twitter, johnson_neyman = TRUE)
+```
+
+The increase in both independent variables `opposition` and `twitter` (i.e. for opposition on Twitter) were associated with increased value of `bing`. `opposition` (`pol_party = "opposition"`) was predictive of higher levels of `bing` at high `twitter` (`platform = "twitter"`) than at low `twitter` (`platform = "reddit"`).
+
+```{r message=FALSE}
+interact_plot(logistic_interactE, pred = "opposition", modx = "twitter",
+              modx.labels = c("Reddit", "Twitter"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("orange", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform") +
+  scale_x_continuous(breaks = 0:1, label = c("Incumbent", "Opposition")) +
+  labs(title = "Singapore Parliamentary General Elections 2020",
+       subtitle = "The interaction of political party and platform\non the probability of positive bing sentiment",
+       x = "Political Party",
+       y = "Probability of Positive bing Sentiment",
+       caption = "Source: Reddit & Twitter") + 
+  annotate("text",
+           x = 0.75, y = 0.44, size = 3,
+           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
+  theme(legend.position = "top")
+```
+
+Other two-way interactions and three-way interaction between the three variables are also investigated.
+
+#### Two-way interaction between `twitter` and `period`
+
+```{r}
+logistic_interactE2w1 <- glm(bing ~ twitter * period + opposition, 
+                          data = df_log, family = binomial(link = "logit"))
+
+interact_plot(logistic_interactE2w1, pred = "period", modx = "twitter",
+              modx.labels = c("Reddit", "Twitter"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("orange", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform") + 
+  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
+  labs(title = "Singapore Parliamentary General Elections 2020",
+       subtitle = "The interaction of election period and platform\non the probability of positive bing sentiment",
+       x = "Election Period",
+       y = "Probability of Positive bing Sentiment",
+       caption = "Source: Reddit & Twitter") + 
+  annotate("text",
+           x = 1.5, y = 0.42, size = 3,
+           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
+  theme(legend.position = "top")
+
+sim_slopes(logistic_interactE2w1, pred = period, modx = twitter, johnson_neyman = TRUE)
+```
+
+In contrast with the first two-way interaction model, the `period` variable has a negative interaction. Increases in both independent variables `period` and `twitter` were associated with decreased values of `bing`. The effects of the social media platforms on the relationship of `period` and `bing` was slightly greater at the earlier part of the election process, slightly more for Twitter.
+
+#### Two-way interaction between `opposition` and `period`
+
+```{r}
+logistic_interactE2w2 <- glm(bing ~ twitter + opposition * period, 
+                           data = df_log, family = binomial(link = "logit"))
+
+interact_plot(logistic_interactE2w2, pred = "period", modx = "opposition",    
+              modx.labels = c("Incumbent", "Opposition"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("red", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Political Party") + 
+  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
+  labs(title = "Singapore Parliamentary General Elections 2020",
+       subtitle = "The interaction of election and political party period\non the probability of positive bing sentiment",
+       x = "Election Period",
+       y = "Probability of Positive bing Sentiment",
+       caption = "Source: Reddit & Twitter") + 
+  annotate("text",
+           x = 1.5, y = 0.425, size = 3,
+           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
+  theme(legend.position = "top")
+
+sim_slopes(logistic_interactE2w2, pred = period, modx = opposition, johnson_neyman = TRUE)
+```
+
+The same was observed when `twitter` variable (between Reddit and Twitter) is replaced with `opposition` (between incumbent and opposition) the predictor `x` variable. The effects of the political parties on the relationship of `period` and `bing` was slightly greater at the earlier part of the election process.
+
+#### Three-way interaction
+
+```{r}
+logistic_interactE3w <- glm(bing ~ twitter * opposition * period, 
+                           data = df_log, family = binomial(link = "logit"))
+
+interact_plot(logistic_interactE3w, pred = "period", modx = "opposition", mod2 = "twitter",   
+              modx.labels = c("Incumbent", "Opposition"), mod2.labels = c("Reddit", "Twitter"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("red", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Political Party") + 
+  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
+  labs(title = "Singapore Parliamentary General Elections 2020",
+       subtitle = "The interaction of election period, political party and platform\non the probability of positive bing sentiment",
+       x = "Election Period",
+       y = "Probability of Positive bing Sentiment",
+       caption = "Source: Reddit & Twitter")
+
+sim_slopes(logistic_interactE3w, pred = period, modx = opposition, mod2 = twitter, johnson_neyman = TRUE)
+```
+
+In this three-way interaction model, across the election period, the incumbent has decreased values of `bing` while the opposition has increased values of `bing` on Reddit. However, Twitter has an opposite outcome for either of the political parties, i.e. incumbent has increased values of `bing` and opposition has decreased values of `bing` across the election period. The difference of `bing` values between incumbent and opposition is higher on Twitter.
+
+### 2015 vs 2020 Elections
+
+To gain a well-rounded understanding of Singapore Elections, we cannot rely on data from one election alone. We need data from multiple elections to compare and contrast against one another. We have managed to obtain some Reddit data from the 2015 Singapore General Election. The dataset was reshaped and the trends in sentiment for both the 2015 and 2020 Singapore General Elections were plotted below. 
+
+```{r message=FALSE}
+two_elections <- df %>%
+  filter(platform == "reddit") %>%
+  mutate(year = case_when(
+    !is.na(period_2015) ~ "2015",
+    !is.na(period_2020) ~ "2020")) %>%
+  unite(col = "period", period_2015:period_2020, na.rm = TRUE, remove = FALSE)
+
+two_elections %>%
+  group_by(date, year, period, pol_party) %>%
+  summarize(afinn_value = mean(afinn_value)) %>%
+  ggplot(aes(x = date, y = afinn_value, group = pol_party, col = pol_party)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "2015 vs 2020 Elections",
+       x = "Period",
+       y = "Sentiment",
+       col = "Political Party",
+       caption = "Source: Reddit") +
+  facet_grid(~year, scales = "free_x") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  scale_x_date(date_breaks = "2 days")
+```
+
+A One-way Between-Groups ANOVA was conducted to analyse the effect of `year` on overall sentiments across both elections. There was a significant difference in sentiments between the two elections, with the 2015 election more negative than the 2020 election.
+
+```{r message=FALSE}
+year_model <- aov(afinn_value ~ year, data = two_elections) %>%
+  tidy()
+
+two_elections %>%
+  group_by(year) %>%
+  summarize(afinn_value = mean(afinn_value))
+```
+
+## Interpretation of the Results
+
+From our data science project, we found the following:
+
+1.  Generally, the election-related comments made on Reddit are more negatively-toned than Twitter. The negativity worsened at the second phase.
+
+2.  Second phase of the election process is marked by increasingly negative sentiments compared to first and third phases. In terms of discrete categories of emotions, towards the end of the second phase and throughout the third phase is where discussions are more heated up, with many more instances of various sentiments showing up in the data. During this particular period, the opposition parties experienced an increase in the number of positively-toned sentiments (e.g. anticipation, joy, trust, etc.) relative to the negatively-toned sentiments (e.g. sadness, disgust, fear, etc.) of the same period. 
+
+3.  Comments made concerning the incumbent party was more negatively-toned than the opposition parties.
+
+4.  On the whole, Reddit users were more negative about the 2015 Singapore General Election than the 2020 Election. This could be attributed to Minister Mentor Lee Kuan Yew's passing in 2015. Singapore was in a state of mourning and this could have contributed to the negative sentiments on Reddit. Following the majority win by the incumbent party, our plot reflects a change in positive sentiments for the incumbent party at the third phase. Perhaps Singaporeans were relieved that the status quo was maintained when they were at the most vulnerable.
+
+## Implications
+
+Analyses of the Reddit and Twitter data corroborates our thesis. There has been increasing dissatisfaction with the ruling of the incumbent party by Singaporeans. The findings of our project has lend credence to this view, providing evidence that Singaporeans have taken to social media platforms such as Reddit and Twitter to voice their dissatisfaction with the incumbent party. Of note is the negative sentiments for the Opposition parties as well. This contributes some sort of ambivalence or noise into our results. A cursory review of social media platforms would attribute this to the "Internet Brigade (IB)" who are pro-incumbent party and would openly express negative sentiments on opposition parties. Further analysis in this area is needed to tease out the difference.
+
+We have also learned that social media platforms differ in the extent of sentiments expressed. Twitter, as a platform, is more positively-toned compared to Reddit. One plausible suggestion for this outcome is the presence of news pertaining to the elections on twitter. News adopt a neutral tone, which could contribute to the lift in negative sentiments to a less-negative tone. 
+
+## Limitations & Future Directions
+
+There are some limitations in our data science project. First, we do not possess sufficient data for the 2015 Singapore General Election. There is a limitation to scrapping historical data from Twitter and we do not have any Twitter data from the 2015 Singapore General Election. While we do have some Reddit data for the 2015 Singapore General Election, this is insufficient as we explicitly filtered for election-related comments. We would have missed out on keywords that were tangentially related to the 2015 Elections. Even then, the 2015 General Election was an atypical election. At that point, the passing of Minister Mentor Lee Kuan Yew could have influenced the results positively for the incumbent party.
+
+Second, the regular expressions used to differentiate comments concerning the incumbent party and the opposition parties are not intelligent enough to differentiate comments that include both parties in a single sentence. As a result, mentions of both parties are assigned to the incumbent party due to how our code is structured. Further research into this area could add additional nuance to our results.
+
+Future research could consider including the Eat-Drink-Man-Woman (EDMW) subforum from the HardwareZone (HWZ) forum. This subforum is another avenue for Singaporeans to express their political views during the election period. Hence, comparisons could then be made across three platforms (i.e. Reddit, Twitter and HWZ EDMW subforum).
+
+## Contribution Statement
+
+Combined:
+
+* Election process timeline chart
+* Regular expressions to use to extract election posts
+* Cleaned up and simplified script chunks to `tidyverse` way
+
+David's contributions:
+
+* Scraping and cleaning the Singapore subreddit data
+* Problem Statement and Research Questions
+* Researched and implemented Chatter plots to visualise word frequency data with emotional valence of terms used
+* Shiny app
+* ANOVA models
+* Interpretation of the Results and Implications
+* Limitations and Future Directions
+
+Fabian's contributions:
+
+* Scraping and cleaning the Twitter data
+* Explanation of the Election Process
+* Scraping historical election results data to visualise percentage of votes and voters turnout
+* Comparison across three sentiment dictionaries
+* Incumbent vs Opposition AFINN Sentiment Plots
+* Logistic Regression models
+* Text formatting and language
+
+## References
+
+[^1]: [Election Department Singapore](www.eld.gov.sg/)
+[^2]: [RIP wordclouds, long live CHATTERPLOTS](https://towardsdatascience.com/rip-wordclouds-long-live-chatterplots-e76a76896098)
+[^3]: [GE2020: WP chief Pritam Singh says he looks forward to serving as Leader of the Opposition](https://www.channelnewsasia.com/news/singapore/ge2020-wp-chief-pritam-singh-says-he-looks-forward-to-serving-as-12924456)
+[^4]: [PAP lost the youth vote in Sengkang GRC](https://mothership.sg/2020/07/pap-lost-sengkang-grc-why/)
+[^5]: [Police investigating WP candidate Raeesah Khan over alleged online comments on race, religion](https://www.channelnewsasia.com/news/singapore/raeesah-khan-workers-party-police-reports-race-ge2020-sengkang-12903248)
+[^6]: [Singapore GE 2020: PAP new face Ivan Lim withdraws from election following allegations about his past behaviour](https://www.straitstimes.com/singapore/singapore-ge-2020-pap-new-face-ivan-lim-withdraws-as-a-candidate)
+[^7]: [The Problem with Using Tests for Statistical Assumptions](https://www.theanalysisfactor.com/the-problem-with-tests-for-statistical-assumptions/)
+[^8]: [WRS2: A Collection of Robust Statistical Methods](https://cran.r-project.org/web/packages/WRS2/index.html)
+[^9]: [ANOVA in R](https://www.datanovia.com/en/lessons/anova-in-r/)
+[^10]: [FAQ How Can I Understand A Three-way Interaction In ANOVA?](https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faqhow-can-i-understand-a-three-way-interaction-in-anova/)
