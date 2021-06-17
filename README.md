@@ -320,3 +320,396 @@ tweets <- tweets %>%
                                  ignore_case = TRUE))) %>% 
   select(status_id, created_at, screen_name, text, name, location)
 ```
+
+The following shows the Twitter raw dataset:
+
+```
+glimpse(tweets)
+```
+
+```
+## Rows: 45,533
+## Columns: 6
+## $ status_id   <chr> "x1275566255479685126", "x1275579274184085510", "x12755...
+## $ created_at  <dttm> 2020-06-23 23:07:48, 2020-06-23 23:59:32, 2020-06-23 2...
+## $ screen_name <chr> "thenewpaper", "thenewpaper", "BusinessTimes", "Busines...
+## $ text        <chr> "The hot seats to watch this election https://t.co/nhvl...
+## $ name        <chr> "The New Paper", "The New Paper", "The Business Times",...
+## $ location    <chr> "Singapore", "Singapore", "Singapore", "Singapore", "Si...
+```
+
+Similar to what was done for the Reddit data, we created the period variable to split the election process to three phases. Since there is a limitation to what we can scrape from Twitter, only 2020 tweets are available.
+
+```
+tweets <- tweets %>% 
+  mutate(date = as_date(created_at)) %>% # Convert datetime to date
+  filter(date >= as_date("2020-06-23") & date <= as_date("2020-07-12")) %>% 
+  mutate(period_2020 = case_when(
+    between(date, as_date("2020-06-23"), as_date("2020-06-30")) ~ "first phase",
+    between(date, as_date("2020-07-01"), as_date("2020-07-10")) ~ "second phase",
+    between(date, as_date("2020-07-11"), as_date("2020-07-12")) ~ "third phase"))
+```
+
+Tweets are further categorised to incumbent and opposition parties using regular expressions. More expressions are added for the 10 opposition parties to balance the number of tweets related to each group, and to cover as much opposition tweets as possible. `screen_name` variable from the Twitter data is also used to group the tweets.
+
+```
+# Group posts into incumbent-related and opposition-related based on text contents
+tweets <- tweets %>%
+  mutate(pol_party = case_when(
+    str_detect(text, regex(paste0("lhl|lee hsien loong|goh chok tong|pap|ccs|tcj|",
+                                  "murali|lky|sun xueling|ib|incumbent|ruling party|",
+                                  "loong|kate spade|tpl|george yeo|lim hwee hwa|",
+                                  "jo teo|joteo|hsk|yacob|ivan|masagos|halimah|mr lee"),
+                           ignore_case = TRUE)) ~ "incumbent",
+    str_detect(text, regex(paste0("nicole|jamus|wp|ltk|chiam|cst|pritam|kj|opp|nsp|",
+                                  "chee|people's voice|pv|csj|sylvia|jeanette|",
+                                  "lim tean|tambyah|sdp|chia|psp|workers party|aljunied|",
+                                  "sdp|singapore democratic party|psp|progress singapore party|",
+                                  "wp|workers party|workers' party|ppp|people's power party|",
+                                  "pv|peoples voice|people's voice|spp|singapore people's party|",
+                                  "rp|reform party|rdu|red dot united|hammer|hypebeast|",
+                                  "RedDotUnited|ProgressSgParty|thereformparty|workersparty|",
+                                  "raeesah|cheng bok|tcb|jeyaretnam"),
+                                  ignore_case = TRUE)) ~ "opposition"))
+
+# Group posts into incumbent-related and opposition-related based on screen name
+tweets <- tweets %>% 
+  mutate(pol_party = if_else(
+    screen_name %in% c("PAPSingapore", "VivianBala"), 
+    "incumbent", if_else(
+      screen_name %in% c("thereformparty", "wpsg", "ProgressSgParty", "KenJeyaretnam", "TanChengBock", "SPP_SG"),
+      "opposition", pol_party)))
+```
+
+We unnest the texts from the individual tweets into tokens, just like Reddit comments. Stop words are removed thereafter. Common Twitter characters that are not useful in analysis (e.g. hashtags, mentions, hyperlinks) are excluded as well.
+
+```
+tweets_tc <- tweets %>% 
+  unnest_tokens(word, text, token = "tweets") %>% # Tokenisation
+  group_by(word) %>% 
+  #filter(n() >= 15) %>% # Filter tweets with < 15 words
+  ungroup() %>% 
+  anti_join(stop_words) %>% 
+  filter(!str_detect(word, "^#\\w+$")) %>% # Exclude # hashtags
+  filter(!str_detect(word, "^@\\w+$")) %>% # Exclude @ mentions
+  filter(!str_detect(word, "([0-9]|10)")) %>% # Exclude numbers 0-10
+  filter(!str_detect(word, "https\\w$")) %>% # Exclude hyperlinks
+  filter(!str_detect(word, fixed("amp"))) %>% # Exclude "amp"
+  filter(!str_detect(word, "[\r\n]")) %>% # Exclude special metacharacters
+  filter(!str_detect(word, "^\\$+")) %>% # Exclude $ and $*
+  filter(!str_detect(word, "^\\<[Uu]\\+")) # Exclude unicode characters
+```
+
+Rows that do not have values for `pol_party` are removed. `period` was checked to have values for every row. We generated sentiments using `afinn`, `nrc` and `bing` dictionaries to the data table.
+
+```
+tweets_sentiments <- tweets_tc %>% 
+  select(status_id, created_at, date, period_2020, pol_party, word) %>% 
+  filter(!is.na(pol_party)) %>%
+  inner_join(get_sentiments("afinn"), by = "word") %>% 
+  inner_join(get_sentiments("nrc"), by = "word") %>% 
+  inner_join(get_sentiments("bing"), by = "word") %>% 
+  rename(afinn_value = value, nrc_sentiment = sentiment.x, bing_sentiment = sentiment.y) %>% 
+  arrange(created_at)
+```
+
+#### Merging Reddit & Twitter
+
+First, we removed the `status_id` and `created_at` columns from the `tweets_sentiments` data frame. We then renamed the `period` column to `period_2020` to align it with the reddit data frame. This is followed by creating a blank column called `period_2015` and re-arranging the colums to match the `reddit` data frame.
+
+```
+tweets_sentiments <- tweets_sentiments %>%
+  select(-(status_id:created_at)) %>%
+  mutate(period_2015 = NA) %>%
+  select(date, period_2015, everything())
+```
+
+Next, the `platform` variable was created to indicate which platform (Reddit or Twitter) a given observation belongs to. This was done separately for each dataset.
+
+```
+reddit <- reddit_sentiments %>% 
+  mutate(platform = "reddit") %>% 
+  select(date, platform, everything())
+
+twitter <- tweets_sentiments %>%
+    mutate(platform = "twitter") %>%
+    select(date, platform, everything())
+```
+
+Finally, both Reddit and Twitter data were merged together, and the final `df` data will be used for exploratory and analysis.
+
+```
+df <- bind_rows(reddit, twitter)
+glimpse(df)
+```
+
+```
+## Rows: 68,228
+## Columns: 9
+## $ date           <date> 2015-08-25, 2015-08-25, 2015-08-25, 2015-08-25, 201...
+## $ platform       <chr> "reddit", "reddit", "reddit", "reddit", "reddit", "r...
+## $ period_2015    <chr> "first phase", "first phase", "first phase", "first ...
+## $ period_2020    <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, ...
+## $ pol_party      <chr> "incumbent", "incumbent", "incumbent", "incumbent", ...
+## $ word           <chr> "advantage", "scream", "scream", "scream", "scream",...
+## $ afinn_value    <dbl> 2, -2, -2, -2, -2, -2, -2, -2, -2, -2, 2, 2, 2, 2, 2...
+## $ nrc_sentiment  <chr> "positive", "anger", "disgust", "fear", "negative", ...
+## $ bing_sentiment <chr> "positive", "negative", "negative", "negative", "neg...
+```
+
+### Explore and Visualise
+
+#### Chatter plots
+
+Chatter plots were used to display the most frequently occurring words against their emotional valence.
+
+##### Reddit
+
+Only 2020 data are selected for Reddit in order to be comparable with Twitter.
+
+```
+reddit_freq <- reddit %>%
+  filter(year(date) == 2020) %>%
+  count(word) %>% 
+  distinct()
+
+reddit_afinn <- reddit %>%
+  filter(year(date) == 2020) %>% 
+  select(word, afinn_value) %>%
+  distinct()
+
+reddit_top50 <- left_join(reddit_freq, reddit_afinn, by = "word") %>%
+  arrange(desc(n)) %>%
+  top_n(50)
+
+reddit_top50 %>% 
+  ggplot(aes(x = afinn_value, y = n, label = word)) +
+    geom_text_repel(segment.alpha = 0, aes(colour = afinn_value, size = n)) +
+    scale_color_gradient(low = "firebrick1", high = "deepskyblue2") +
+    labs(title = "Singapore Parliamentary General Election 2020",
+          subtitle = "Top 50 Words and Their Sentiments from Subreddit r/Singapore",
+          x = "Sentiment",
+          y = "Count", 
+          color = "Sentiment", 
+          size = "Counts",
+          caption = "Source: Reddit") +
+    theme(legend.justification = c("right", "top"))
+```
+
+Interestingly, the top 50 words from Reddit are all positive.
+
+##### Twitter
+
+```
+# Word sentiments
+twitter_freq <- twitter %>% 
+    count(word)
+
+twitter_sent <- twitter %>% 
+    select(word, afinn_value) %>% 
+    distinct()
+
+# Joint frequencies and sentiments and extract top 50 most frequently used words
+twitter_top50 <- left_join(twitter_freq, twitter_sent, by = "word") %>% 
+    arrange(desc(n)) %>% 
+    slice(1:50)
+
+# Plot
+twitter_top50 %>%
+  ggplot(aes(x = afinn_value, y = n, label = word)) +
+  geom_text_repel(segment.alpha = 0, aes(color = afinn_value, size = n)) +
+  scale_color_gradient(low = "firebrick1", high = "deepskyblue2") +
+  labs(title = "Singapore Parliamentary General Election 2020",
+       subtitle = "Top 50 Words and Their Sentiments from Twitter",
+       x = "Sentiment",
+       y = "Count",
+       color = "Sentiment",
+       size = "Count",
+       caption = "Source: Twitter") +
+  theme(legend.justification = c("right", "top"))
+```
+
+Twitter has top 50 words that have more balanced sentiments between positive and negative compared to Reddit.
+
+Both have the most word used in the posts - “winning”. The context of this most used word is likely on the hope in winning the constituency the candidates that are contesting in. Moving later into the election process, the winning candidates would be happy, and the democracy in Singapore has made progress with the official appointment of the Leader of the Opposition. Both words “happy” and “progress” are the other top few positive words in Twitter.
+
+In contrast, the top few most negative words in Twitter are “bad”, “lost” and “disappointed”. These words are likely due to candidates that are hopeful to win but did not in the end. This may also be related to another GRC lost by the incumbent.
+
+#### Comparison between Three Sentiment Dictionaries
+
+##### Reddit
+
+```
+reddit_afinn <- reddit_tc %>% 
+  filter(year(date) == 2020) %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  group_by(index = factor(date)) %>% 
+  summarise(sentiment = mean(value)) %>% 
+  mutate(method = "AFINN")
+
+reddit_bing_nrc <- bind_rows(reddit_tc %>%
+                               filter(year(date) == 2020) %>%
+                               inner_join(get_sentiments("bing")) %>%
+                               mutate(method = "Bing et al."),
+                             reddit_tc %>%
+                               filter(year(date) == 2020) %>% 
+                               inner_join(get_sentiments("nrc") %>%
+                                            filter(sentiment %in% c("positive", "negative"))) %>%
+                               mutate(method = "NRC")) %>%
+  count(method, index = factor(date), sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+bind_rows(reddit_afinn, reddit_bing_nrc) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Singapore Parlimentary General Election 2020",
+       subtitle = "Comparison between Three Sentiment Dictionaries across Election Period",
+       x = "Date",
+       y = "Sentiment",
+       caption = "Source: Reddit")
+```
+
+##### Twitter
+
+```
+twitter_afinn <- tweets_tc %>%
+  inner_join(get_sentiments("afinn")) %>%
+  group_by(index = factor(date)) %>%
+  summarise(sentiment = mean(value)) %>%
+  mutate(method = "AFINN")
+
+twitter_bing_nrc <- bind_rows(tweets_tc %>%
+                                inner_join(get_sentiments("bing")) %>%
+                                mutate(method = "Bing et al."),
+                              tweets_tc %>%
+                                inner_join(get_sentiments("nrc") %>%
+                                             filter(sentiment %in% c("positive", "negative"))) %>%
+                                mutate(method = "NRC")) %>%
+  count(method, index = factor(date), sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+bind_rows(twitter_afinn, twitter_bing_nrc) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Singapore Parlimentary General Election 2020",
+       subtitle = "Comparison between Three Sentiment Dictionaries across Election Period",
+       x = "Date",
+       y = "Sentiment",
+       caption = "Source: Twitter")
+```
+
+Comparing between Reddit and Twitter datasets, Twitter has generally more positive sentiments. This is possibly due to news snippets and links that are posted by news agencies. The contents are tend to be more positive regardless of which party are they on. Reddit has more texts per post, and therefore giving more weightage to negative words.
+
+#### Sentiment plots between incumbent and opposition (AFINN lexicon)
+
+##### Reddit
+
+```
+reddit_sentiments %>% 
+  filter(year (date) == 2020) %>% 
+  group_by(date, pol_party) %>% 
+  summarise(n = n(), value = round(mean(afinn_value), 2)) %>% 
+  ggplot(aes(x = date, y = value, group = pol_party, col = pol_party)) + 
+  geom_line() + 
+  facet_wrap(~ pol_party) + 
+  labs(title = "Singapore Parlimentary General Election 2020",
+       subtitle = "Sentiment across Election Process based on AFINN Lexicon",
+       x = "Date",
+       y = "Mean Sentiment",
+       color = "Political Party",
+       caption = "Source: Twitter") +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom") +
+  scale_x_date(date_breaks = "day") + 
+  scale_color_manual(values = c("deepskyblue2", "firebrick1"))
+```
+
+##### Twitter
+
+```
+tweets_sentiments %>% 
+  group_by(date, pol_party) %>% 
+  summarise(n = n(), value = round(mean(afinn_value), 2)) %>% 
+  ggplot(aes(x = date, y = value, group = pol_party, col = pol_party)) + 
+  geom_line() + 
+  facet_wrap(~ pol_party) + 
+  labs(title = "Singapore Parlimentary General Election 2020",
+       subtitle = "Sentiment across Election Process based on AFINN Lexicon",
+       x = "Date",
+       y = "Mean Sentiment",
+       color = "Political Party",
+       caption = "Source: Twitter") + 
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom") + 
+  scale_x_date(date_breaks = "day") + 
+  scale_color_manual(values = c("deepskyblue2", "firebrick1"))
+```
+
+Based on the AFINN sentiment plots, the trend for the opposition is generally similar between Reddit and Twitter with a dip to negative between 4 and 5 July. This is probably due to the police investigation on Workers’ Party candidate Raeesah Khan over alleged online comments on race and religion. There is also a dip to negative for the incumbent party in Twitter, due to the withdrawal of PAP candidate Ivan Lim after allegations about his past conduct and behaviour.
+
+#### Sentiment plots between incumbent and opposition (NRC lexicon)
+
+In the previous examples, we used the `afinn` lexicon for data visualisation. In this section, we will be using the `NRC` lexicon. The `NRC` lexicon conceptualizes sentiments not along a continuum, but as discrete categories such as sadness, disgust, fear, anger, etc. Due to the presence of multiple categories, we used a Shiny app to provide readers/users with the freedom to visualise each sentiment at their own pace.
+
+The results appear roughly similar across all 10 sentiment categories, with comments made concerning the incumbent party experiencing a large spike near the end of the second phase and throughout the third phase. In contrast, there are two trends associated with the opposition parties. For the negative, sadness, disgust, fear, and anger sentiments, there was a smaller spike at the end of the second phase/start of the third phase relative to the much larger spikes of the positive, anticipation, joy, surprise, and trust sentiments across the same instance.
+
+# Define UI for application that draws a line chart for each sentiment
+ui <- fluidPage(
+   
+   # Application title
+   titlePanel("NRC Lexicon for Sentiments"),
+   
+   # Sidebar with select input for selecting sentiment
+   sidebarLayout(
+      sidebarPanel(
+         selectInput("sentiment",
+                     "Sentiment", choices = unique(df$nrc_sentiment))
+      ),
+      
+      # Display line chart for a particular sentiment
+      mainPanel(
+         withSpinner(plotOutput("sentiment_plot"))
+      )
+   )
+)
+
+# Define server logic required to draw a line chart for sentiment
+server <- function(input, output) {
+  
+  # Filter by sentiment and store output in reactive object
+  filtered_df <- reactive({
+    
+    df %>%
+      select(date, platform, period_2020, pol_party, nrc_sentiment) %>%
+      filter(!is.na(period_2020)) %>%
+      filter(nrc_sentiment == input$sentiment) %>%
+      group_by(date, platform, pol_party, nrc_sentiment) %>%
+      count()
+  })
+  
+  # plot reactive object and render object
+  output$sentiment_plot <- renderPlot(
+    
+    filtered_df() %>%
+      ggplot(aes(x = date, y = n, col = pol_party)) + geom_line() +
+      labs(title = paste0(str_to_sentence(input$sentiment), 
+                          " Sentiment between Political Parties across the Election Timeline"),
+           x = "Date", 
+           y = "Count",
+           col = "Political Parties",
+           caption = "Source: Reddit r/Singapore & Twitter") +
+      scale_x_date(date_breaks = "day") +
+      theme(axis.line = element_line(colour = "darkblue", 
+                                     size = 1, linetype = "solid"),
+            axis.text.x = element_text(angle = 45, hjust = 1))
+  )
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
