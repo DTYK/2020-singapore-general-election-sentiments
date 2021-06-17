@@ -5,7 +5,7 @@
 
 ### Introduction
 
-The Parliament in Singapore may be dissolved before the expiry of its five-year term by the President on the advice of the Prime Minister. The general election must be held within three months of the Parliament’s dissolution. There are two types of constituency or electoral division: single member constituency (SMC) and group representation constituency (GRC). SMC, as the name suggests, has only one member of parliament (MP), while GRC has three to six MPs. The GRC scheme was introduced in the 1988 general election to ensure that minority groups are represented in Parliament 1.
+The Parliament in Singapore may be dissolved before the expiry of its five-year term by the President on the advice of the Prime Minister. The general election must be held within three months of the Parliament’s dissolution. There are two types of constituency or electoral division: single member constituency (SMC) and group representation constituency (GRC). SMC, as the name suggests, has only one member of parliament (MP), while GRC has three to six MPs. The GRC scheme was introduced in the 1988 general election to ensure that minority groups are represented in Parliament.
 
 Below are the percentage of votes between incumbent and opposition, and of voters turnout for parliamentary general elections between 1988 (when GRC scheme is introduced) and 2020. Data for 2015 and earlier are scraped from Data.gov.sg using CKAN API while data for 2020 is scraped from Wikipedia (which is sourced from Elections Department Singapore and Channel News Asia) using rvest package.
 
@@ -659,6 +659,7 @@ In the previous examples, we used the `afinn` lexicon for data visualisation. In
 
 The results appear roughly similar across all 10 sentiment categories, with comments made concerning the incumbent party experiencing a large spike near the end of the second phase and throughout the third phase. In contrast, there are two trends associated with the opposition parties. For the negative, sadness, disgust, fear, and anger sentiments, there was a smaller spike at the end of the second phase/start of the third phase relative to the much larger spikes of the positive, anticipation, joy, surprise, and trust sentiments across the same instance.
 
+```
 # Define UI for application that draws a line chart for each sentiment
 ui <- fluidPage(
    
@@ -713,3 +714,382 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+```
+
+### Model
+
+#### Assumption Check
+
+Before running a three-way between-groups ANOVA model, one has to ensure that the following assumptions have been met:
+
+* Dependent variable is measured on a continuous scale
+* Independent variables are measured on a categorical scale
+* Independence of observations
+* Absence of significant outliers
+* Dependent variable approximately normal for each combination of the independent variables
+* Homogeneity of variance for each combination of the independent variables
+
+The first two assumptions have been met. The dependent variable `afinn_value` is measured on a continuous scale. The independent variables of `platform`, `period_2020`, and `pol_party` are categorical variables.
+
+The third assumption, independence of observations, cannot be ascertained. It would not be possible for us to know whether a given Twitter account would have posted under a different username on Reddit or vice versa.
+
+Significant outliers could be identified with the boxplots of `afinn_value` for each combination of independent variables. The results show that there are no outliers in our dataset. This is expected since `afinn_value` is between -5 and 5.
+
+```
+df %>%
+  filter(!is.na(period_2020)) %>%
+  ggplot(aes(x = period_2020, y = afinn_value, fill = pol_party)) + geom_boxplot() +
+  labs(title = "Boxplots of each combination of independent variables",
+       y = "sentiment",
+       x = "Phase", 
+       fill = "Political Party") +
+  facet_grid(~platform) +
+  theme_classic()
+```
+
+The `identify_outlier` function from the `rstatix` package could also be used to identify outliers by group. Similar to the boxplots, the results showed that there are no outliers in our dataset.
+
+```
+df %>%
+  filter(!is.na(period_2020)) %>%
+  identify_outliers(afinn_value)
+```
+
+Next, we used Q-Q plots to identify whether the `afinn_value` variable is normally distributed for each combination of independent variables. As the data points do not fall along the the reference line, the assumption for normality has been violated.
+
+```
+df %>%
+  filter(!is.na(period_2020)) %>%
+  ggqqplot(., "afinn_value", facet.by = c("pol_party", "platform")) + 
+  labs(title = "Q-Q Plots")
+```
+
+Levene’s Test for Homogeneity of Variance was conducted on the dataset. The assumption for homogeneity was violated.
+
+```
+df %>%
+  leveneTest(afinn_value ~ as.factor(pol_party) * as.factor(period_2020) * as.factor(pol_party), data = .) %>%
+  tidy()
+```
+
+ANOVA models remain robust even if the assumption of homogeneity of variance is violated. Robustness is dependent on the sample sizes across groups. In our case, the sample sizes across groups are not similar to one another. Hence, we have to use a non-parametric equivalent to the 3-way between-groups ANOVA.
+
+```
+df %>%
+  filter(!is.na(period_2020)) %>%
+  group_by(platform, period_2020, pol_party) %>%
+  count()
+```
+
+#### ANOVA
+
+Functions from the `WRS2` package will be used for the subsequent modelling process as our assumption of homogeneity has been violated. The package offers robust ANOVA for situations such as ours.
+
+The `t3way` function from the `WRS2` package was used as a robust 3-Way Between-Groups ANOVA alternative. The results showed that there was a significant three-way interaction between `platform`, `period_2020`, and `pol_party`, p = 0.0010.
+
+There was a significant two-way interaction between `platform` and `period_2020`, p = 0.0270. There was a significant two-way interaction between `platform` and `pol_party`, p = 0.0010. There was no significant interaction between `period_2020` and `pol_party`.
+
+There was a significant main effect of `platform` on `afinn_value`, p = 0.0001. There was a significant main effect of `period_2020` on `afinn_value`, p = 0.0001. There was a significant main effect of `pol_party` on `afinn_value`, p = 0.0010.
+
+```
+anova.model <- t3way(afinn_value ~ as.factor(platform) * as.factor(period_2020) * as.factor(pol_party), data = df)
+anova.model
+```
+
+```
+## Call:
+## t3way(formula = afinn_value ~ as.factor(platform) * as.factor(period_2020) * 
+##     as.factor(pol_party), data = df)
+## 
+##                                                                      value
+## as.factor(platform)                                             299.455464
+## as.factor(period_2020)                                           59.137461
+## as.factor(pol_party)                                            140.686817
+## as.factor(platform):as.factor(period_2020)                        7.287889
+## as.factor(platform):as.factor(pol_party)                         49.477585
+## as.factor(period_2020):as.factor(pol_party)                       3.967989
+## as.factor(platform):as.factor(period_2020):as.factor(pol_party)  16.799191
+##                                                                 p.value
+## as.factor(platform)                                              0.0001
+## as.factor(period_2020)                                           0.0001
+## as.factor(pol_party)                                             0.0010
+## as.factor(platform):as.factor(period_2020)                       0.0270
+## as.factor(platform):as.factor(pol_party)                         0.0010
+## as.factor(period_2020):as.factor(pol_party)                      0.1380
+## as.factor(platform):as.factor(period_2020):as.factor(pol_party)  0.0010
+```
+
+#### Post-hoc tests
+
+A significant three-way interaction could be followed up with the following post-hoc tests:
+
+* Two-way interaction at each level of the third variable
+* Main effects of each variable
+* Pairwise comparisons of each variable that has more than two levels (e.g. period_2020)
+
+A three-way interaction suggests that one, or more, two-way interactions differ across the levels of a third variable. In our case, it could mean that there are differences in the interaction of `period_2020` and `platform` at each level of `pol_party`. We could visualise the three-way interaction as follows. From eye-balling the plot, comments made on Twitter were generally more positive than on Reddit, with comments made specifically on the oppositional parties more positive relative to the incumbent party.
+
+```
+df %>%
+  filter(!is.na(period_2020)) %>%
+  group_by(pol_party, platform, period_2020) %>%
+  summarize(afinn_value = mean(afinn_value)) %>%
+  ggplot(aes(x = period_2020, y = afinn_value, group = platform, col = platform)) +
+  geom_line() +
+  geom_point() +
+  facet_grid(~pol_party) + 
+  labs(title = "Visualising three-way interactions",
+       x = "Period",
+       y = "Sentiment", 
+       col = "Political Party")
+```
+
+We then subset the data frame by the `pol_party` variable and conduct separate two-way ANOVAs, for each `pol_party`. There was a significant interaction between `period_2020` and `platform`, p = 0.005 for the Incumbent party. Similarly, there was a significant interaction between the same two variables for the Opposition party, p = 0.001. This suggests that at certain phases, sentiment levels differ across platforms. From our above visualisation, it can be observed that the second phase has the lowest sentiment across all four groups (Incumbent party and Reddit platform; Incumbent party and Twitter platform; Opposition party and Reddit platform; Opposition Part and Twitter Platform).
+
+```
+split_incumbent <- df %>%
+  filter(!is.na(period_2020)) %>%
+  filter(pol_party == "incumbent") %>%
+  t2way(afinn_value ~ as.factor(period_2020) * as.factor(platform), data = .)
+split_incumbent
+```
+
+```
+## Call:
+## t2way(formula = afinn_value ~ as.factor(period_2020) * as.factor(platform), 
+##     data = .)
+## 
+##                                              value p.value
+## as.factor(period_2020)                     35.6099   0.001
+## as.factor(platform)                        84.7453   0.001
+## as.factor(period_2020):as.factor(platform) 10.8771   0.005
+```
+
+```
+split_opposition <- df %>%
+  filter(!is.na(period_2020)) %>%
+  filter(pol_party == "opposition") %>%
+    t2way(afinn_value ~ as.factor(period_2020) * as.factor(platform), data = .)
+split_opposition
+```
+
+```
+## Call:
+## t2way(formula = afinn_value ~ as.factor(period_2020) * as.factor(platform), 
+##     data = .)
+## 
+##                                               value p.value
+## as.factor(period_2020)                      31.7457   0.001
+## as.factor(platform)                        215.0011   0.001
+## as.factor(period_2020):as.factor(platform)  10.8959   0.005
+```
+
+Finally, we look at the main effects to determine the effect of individual variables on `afinn_value`. As the `period_2020` variables consists of three levels, pairwise comparisons were made at an α of 0.05/12 as we have 12 groups in all. The results showed that there is a significant difference between all three pairs. The line chart below shows that all 3 phases are marked by negative sentiments, with later phases being more negative than the earlier phases.
+
+```
+# t1way(afinn_value ~ platform, data = df)
+# t1way(afinn_value ~ period_2020, data = df)
+# t1way(afinn_value ~ pol_party, data = df)
+
+lincon(afinn_value ~ period_2020, data = df, alpha = 0.004166667)
+```
+
+```
+## Call:
+## lincon(formula = afinn_value ~ period_2020, data = df, alpha = 0.004166667)
+## 
+##                               psihat ci.lower ci.upper p.value
+## first phase vs. second phase 0.24288  0.14048  0.34528       0
+## first phase vs. third phase  0.39335  0.27572  0.51098       0
+## second phase vs. third phase 0.15047  0.05472  0.24621       0
+```
+
+```
+df %>%
+  filter(!is.na(period_2020)) %>%
+  group_by(period_2020) %>%
+  summarize(afinn_value = mean(afinn_value)) %>%
+  ggplot(aes(x = period_2020, y = afinn_value, group = 1)) +
+  geom_line(color = "deepskyblue4", size = 0.75) +
+  geom_point(color = "deepskyblue4") + 
+  labs(x = "Period",
+       y = "Sentiment",
+       title = "Change in Mean Sentiment Across the three phases") +
+  theme_classic()
+```
+
+#### Logistic Regression
+
+To investigate `bing` sentiment data, logistic regression was used to take a look at the main effects and if there are interactions that lead to how positive or negative the sentiments are. Categorical variables are converted to binary or integers.
+
+```
+df_log <- df %>%
+  filter(year(date) == 2020) %>%
+  mutate(twitter = ifelse(platform == "reddit", 0, 1),
+           period = ifelse(period_2020 == "first phase", 1, ifelse(period_2020 == "second phase", 2, 3)),
+           opposition = ifelse(pol_party == "incumbent", 0, 1),
+           bing = ifelse(bing_sentiment == "negative", 0, 1)) %>%
+  select(twitter, period, opposition, bing)
+```
+
+##### Main effects
+
+The main effects are clearly significant with each independent variable (i.e. `platform`, `period` and `pol_party`) contributing to the model. Reddit (`twitter = 0`) is slightly more negative than Twitter (`twitter = 1`), while Opposition has more positive sentiments than Incumbent in either social media platforms. The sentiments generally became gradually negative across the election period.
+
+```
+logistic_mainE <- glm(bing ~ twitter + period + opposition, 
+                      data = df_log, family = binomial(link = "logit"))
+
+tidy(logistic_mainE)
+```
+
+```
+fig1 <- df_log %>% 
+  data_grid(period, twitter, opposition) %>% 
+  mutate(pred = predict(logistic_mainE, ., type = "response"))
+
+ggplot(data = df_log, aes(x = period, y = bing)) + 
+  geom_point(alpha = .05, col = "deepskyblue3") + 
+  geom_point(data = fig1, aes(y = pred, color = opposition), size = 1) + 
+  labs(x = "Period", y = "Probability of Positive bing Sentiment") + 
+  facet_grid(~twitter)
+```
+
+##### Interaction effects
+
+We explore the interactions between two dummy variables: `twitter` and `opposition`. From the output, the interaction effect between the two variables is significant (p = 0.005).
+
+```
+logistic_interactE <- glm(bing ~ twitter * opposition + period, 
+                      data = df_log, family = binomial(link = "logit"))
+
+tidy(logistic_interactE)
+```
+
+##### Model comparison
+
+Main effects and interaction effects models are compared. It shows that Model 2 (Interaction Effects Model) is slightly better than Model 1 (Main Effects Model).
+
+```
+export_summs(logistic_mainE, logistic_interactE,
+             modemodel.names = c("Main Effects Only", "Platform * Period"),
+             error_format = "(p = {p.value})",
+             digits = 3)
+```
+
+```
+anova(logistic_mainE, logistic_interactE, test = "LR")
+```
+
+##### Probing interactions
+
+The first interaction model is visualised, and simple slopes analysis is performed.
+
+```
+interact_plot(logistic_interactE, pred = "opposition", modx = "twitter",
+              modx.labels = c("Reddit", "Twitter"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("orange", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform")
+```
+
+```
+sim_slopes(logistic_interactE, pred = opposition, modx = twitter, johnson_neyman = TRUE)
+```
+
+```
+## JOHNSON-NEYMAN INTERVAL 
+## 
+## When twitter is OUTSIDE the interval [-0.65, -0.12], the slope of
+## opposition is p < .05.
+## 
+## Note: The range of observed values of twitter is [0.00, 1.00]
+## 
+## SIMPLE SLOPES ANALYSIS 
+## 
+## Slope of opposition when twitter = 0.00 (0): 
+## 
+##   Est.   S.E.   z val.      p
+## ------ ------ -------- ------
+##   0.11   0.03     3.54   0.00
+## 
+## Slope of opposition when twitter = 1.00 (1): 
+## 
+##   Est.   S.E.   z val.      p
+## ------ ------ -------- ------
+##   0.43   0.03    15.47   0.00
+```
+
+The increase in both independent variables `opposition` and `twitter` (i.e. for opposition on Twitter) were associated with increased value of `bing`. `opposition` (`pol_party = "opposition"`) was predictive of higher levels of `bing` at high `twitter` (`platform = "twitter"`) than at low `twitter` (`platform = "reddit"`).
+
+```
+interact_plot(logistic_interactE, pred = "opposition", modx = "twitter",
+              modx.labels = c("Reddit", "Twitter"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("orange", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform") +
+  scale_x_continuous(breaks = 0:1, label = c("Incumbent", "Opposition")) +
+  labs(title = "Singapore Parliamentary General Elections 2020",
+       subtitle = "The interaction of political party and platform\non the probability of positive bing sentiment",
+       x = "Political Party",
+       y = "Probability of Positive bing Sentiment",
+       caption = "Source: Reddit & Twitter") + 
+  annotate("text",
+           x = 0.75, y = 0.44, size = 3,
+           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
+  theme(legend.position = "top")
+```
+
+Other two-way interactions and three-way interaction between the three variables are also investigated.
+
+##### Two-way interaction between twitter and period
+
+```
+logistic_interactE2w1 <- glm(bing ~ twitter * period + opposition, 
+                          data = df_log, family = binomial(link = "logit"))
+
+interact_plot(logistic_interactE2w1, pred = "period", modx = "twitter",
+              modx.labels = c("Reddit", "Twitter"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("orange", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform") + 
+  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
+  labs(title = "Singapore Parliamentary General Elections 2020",
+       subtitle = "The interaction of election period and platform\non the probability of positive bing sentiment",
+       x = "Election Period",
+       y = "Probability of Positive bing Sentiment",
+       caption = "Source: Reddit & Twitter") + 
+  annotate("text",
+           x = 1.5, y = 0.42, size = 3,
+           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
+  theme(legend.position = "top")
+```
+
+```
+sim_slopes(logistic_interactE2w1, pred = period, modx = twitter, johnson_neyman = TRUE)
+```
+
+```
+## JOHNSON-NEYMAN INTERVAL 
+## 
+## When twitter is INSIDE the interval [-0.23, 0.46], the slope of period is p
+## < .05.
+## 
+## Note: The range of observed values of twitter is [0.00, 1.00]
+## 
+## SIMPLE SLOPES ANALYSIS 
+## 
+## Slope of period when twitter = 0.00 (0): 
+## 
+##    Est.   S.E.   z val.      p
+## ------- ------ -------- ------
+##   -0.03   0.01    -2.40   0.02
+## 
+## Slope of period when twitter = 1.00 (1): 
+## 
+##    Est.   S.E.   z val.      p
+## ------- ------ -------- ------
+##   -0.02   0.03    -0.87   0.39
+```
+
+In contrast with the first two-way interaction model, the `period` variable has a negative interaction. Increases in both independent variables `period` and `twitter` were associated with decreased values of `bing`. The effects of the social media platforms on the relationship of `period` and `bing` was slightly greater at the earlier part of the election process, slightly more for Twitter.
