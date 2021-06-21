@@ -248,25 +248,6 @@ Comparing between Reddit and Twitter datasets, Twitter has generally more positi
 
 ##### Twitter
 
-```
-tweets_sentiments %>% 
-  group_by(date, pol_party) %>% 
-  summarise(n = n(), value = round(mean(afinn_value), 2)) %>% 
-  ggplot(aes(x = date, y = value, group = pol_party, col = pol_party)) + 
-  geom_line() + 
-  facet_wrap(~ pol_party) + 
-  labs(title = "Singapore Parlimentary General Election 2020",
-       subtitle = "Sentiment across Election Process based on AFINN Lexicon",
-       x = "Date",
-       y = "Mean Sentiment",
-       color = "Political Party",
-       caption = "Source: Twitter") + 
-  theme(axis.text.x = element_text(angle = 90),
-        legend.position = "bottom") + 
-  scale_x_date(date_breaks = "day") + 
-  scale_color_manual(values = c("deepskyblue2", "firebrick1"))
-```
-
 ![Incumbent vs Opposition on Twitter (AFINN)](/image/incumbent-vs-opposition-twitter-afinn.png)
 
 Based on the AFINN sentiment plots, the trend for the opposition is generally similar between Reddit and Twitter with a dip to negative between 4 and 5 July. This is probably due to the police investigation on Workers’ Party candidate Raeesah Khan over alleged online comments on race and religion.<sup>[5](#footnote5)</sup> There is also a dip to negative for the incumbent party in Twitter, due to the withdrawal of PAP candidate Ivan Lim after allegations about his past conduct and behaviour.<sup>[6](#footnote6)</sup>
@@ -300,57 +281,19 @@ The third assumption, independence of observations, cannot be ascertained. It wo
 
 Significant outliers could be identified with the boxplots of `afinn_value` for each combination of independent variables. The results show that there are no outliers in our dataset. This is expected since `afinn_value` is between -5 and 5.
 
-```
-df %>%
-  filter(!is.na(period_2020)) %>%
-  ggplot(aes(x = period_2020, y = afinn_value, fill = pol_party)) + geom_boxplot() +
-  labs(title = "Boxplots of each combination of independent variables",
-       y = "sentiment",
-       x = "Phase", 
-       fill = "Political Party") +
-  facet_grid(~platform) +
-  theme_classic()
-```
-
 ![Boxplot of IVs](/image/boxplot-of-IVs.png)
 
 The `identify_outlier` function from the `rstatix` package could also be used to identify outliers by group. Similar to the boxplots, the results showed that there are no outliers in our dataset.
 
-```
-df %>%
-  filter(!is.na(period_2020)) %>%
-  identify_outliers(afinn_value)
-```
-
 Next, we used Q-Q plots to identify whether the `afinn_value` variable is normally distributed for each combination of independent variables. As the data points do not fall along the the reference line, the assumption for normality has been violated.
-
-```
-df %>%
-  filter(!is.na(period_2020)) %>%
-  ggqqplot(., "afinn_value", facet.by = c("pol_party", "platform")) + 
-  labs(title = "Q-Q Plots")
-```
 
 ![Q-Q Plots](/image/qq-plots.png)
 
 Levene’s Test for Homogeneity of Variance was conducted on the dataset. The assumption for homogeneity was violated.
 
-```
-df %>%
-  leveneTest(afinn_value ~ as.factor(pol_party) * as.factor(period_2020) * as.factor(pol_party), data = .) %>%
-  tidy()
-```
-
 ![Levene's Test](/image/levenes-test.png)
 
 ANOVA models remain robust even if the assumption of homogeneity of variance is violated. Robustness is dependent on the sample sizes across groups.<sup>[7](#footnote7)</sup> In our case, the sample sizes across groups are not similar to one another. Hence, we have to use a non-parametric equivalent to the 3-way between-groups ANOVA.
-
-```
-df %>%
-  filter(!is.na(period_2020)) %>%
-  group_by(platform, period_2020, pol_party) %>%
-  count()
-```
 
 #### ANOVA
 
@@ -361,11 +304,6 @@ The `t3way` function from the `WRS2` package was used as a robust 3-Way Between-
 There was a significant two-way interaction between `platform` and `period_2020`, p = 0.0270. There was a significant two-way interaction between `platform` and `pol_party`, p = 0.0010. There was no significant interaction between `period_2020` and `pol_party`.
 
 There was a significant main effect of `platform` on `afinn_value`, p = 0.0001. There was a significant main effect of `period_2020` on `afinn_value`, p = 0.0001. There was a significant main effect of `pol_party` on `afinn_value`, p = 0.0010.
-
-```
-anova.model <- t3way(afinn_value ~ as.factor(platform) * as.factor(period_2020) * as.factor(pol_party), data = df)
-anova.model
-```
 
 ```
 ## Call:
@@ -462,53 +400,17 @@ lincon(afinn_value ~ period_2020, data = df, alpha = 0.004166667)
 ## second phase vs. third phase 0.15047  0.05472  0.24621       0
 ```
 
-```
-df %>%
-  filter(!is.na(period_2020)) %>%
-  group_by(period_2020) %>%
-  summarize(afinn_value = mean(afinn_value)) %>%
-  ggplot(aes(x = period_2020, y = afinn_value, group = 1)) +
-  geom_line(color = "deepskyblue4", size = 0.75) +
-  geom_point(color = "deepskyblue4") + 
-  labs(x = "Period",
-       y = "Sentiment",
-       title = "Change in Mean Sentiment Across the three phases") +
-  theme_classic()
-```
-
 ![Sentiment across the Three Phases](/image/sentiment-across-three-phases.png)
 
 #### Logistic Regression
 
 To investigate `bing` sentiment data, logistic regression was used to take a look at the main effects and if there are interactions that lead to how positive or negative the sentiments are. Categorical variables are converted to binary or integers.
 
-```
-df_log <- df %>%
-  filter(year(date) == 2020) %>%
-  mutate(twitter = ifelse(platform == "reddit", 0, 1),
-           period = ifelse(period_2020 == "first phase", 1, ifelse(period_2020 == "second phase", 2, 3)),
-           opposition = ifelse(pol_party == "incumbent", 0, 1),
-           bing = ifelse(bing_sentiment == "negative", 0, 1)) %>%
-  select(twitter, period, opposition, bing)
-```
-
 ##### Main effects
 
 The main effects are clearly significant with each independent variable (i.e. `platform`, `period` and `pol_party`) contributing to the model. Reddit (`twitter = 0`) is slightly more negative than Twitter (`twitter = 1`), while Opposition has more positive sentiments than Incumbent in either social media platforms. The sentiments generally became gradually negative across the election period.
 
 ![Logistic Regression Main Effects](/image/LR-main-effects.png)
-
-```
-fig1 <- df_log %>% 
-  data_grid(period, twitter, opposition) %>% 
-  mutate(pred = predict(logistic_mainE, ., type = "response"))
-
-ggplot(data = df_log, aes(x = period, y = bing)) + 
-  geom_point(alpha = .05, col = "deepskyblue3") + 
-  geom_point(data = fig1, aes(y = pred, color = opposition), size = 1) + 
-  labs(x = "Period", y = "Probability of Positive bing Sentiment") + 
-  facet_grid(~twitter)
-```
 
 ![Probability of Positive Bing Sentiment](/image/prob-of-positive-bing.png)
 
