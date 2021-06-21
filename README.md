@@ -9,11 +9,6 @@ The Parliament in Singapore may be dissolved before the expiry of its five-year 
 
 Below are the percentage of votes between incumbent and opposition, and of voters turnout for parliamentary general elections between 1988 (when GRC scheme is introduced) and 2020. Data for 2015 and earlier are scraped from Data.gov.sg using CKAN API while data for 2020 is scraped from Wikipedia (which is sourced from Elections Department Singapore and Channel News Asia) using rvest package.
 
-```
-source("Tan_Kong-ge_results.R")
-ge_plot
-```
-
 ![GE Plot](/image/ge_plot.png)
 
 The election process consists of the following:
@@ -43,6 +38,8 @@ In our project the election process is split into three distinct phases:
 * First phase: Dissolution of Parliment Date to Nomination Date
 * Second phase: Day after Nomination Date to Polling Date
 * Third phase: Day after Polling Date to the subsequent day
+
+![Singapore Parlimentary General Election Process and its Phases](/image/Tan_Kong-election.png)
 
 ### Problem Statement
 
@@ -498,6 +495,8 @@ reddit_top50 %>%
     theme(legend.justification = c("right", "top"))
 ```
 
+![Reddit Chatter Plot](/image/reddit-chatter-plot.png)
+
 Interestingly, the top 50 words from Reddit are all positive.
 
 ##### Twitter
@@ -530,6 +529,8 @@ twitter_top50 %>%
        caption = "Source: Twitter") +
   theme(legend.justification = c("right", "top"))
 ```
+
+![Twitter Chatter Plot](/image/twitter-chatter-plot.png)
 
 Twitter has top 50 words that have more balanced sentiments between positive and negative compared to Reddit.
 
@@ -574,6 +575,8 @@ bind_rows(reddit_afinn, reddit_bing_nrc) %>%
        caption = "Source: Reddit")
 ```
 
+![Comparison between Three Sentiment Dictionaries on Reddit](/image/three-sentiment-dictionaries-reddit.png)
+
 ##### Twitter
 
 ```
@@ -606,6 +609,8 @@ bind_rows(twitter_afinn, twitter_bing_nrc) %>%
        caption = "Source: Twitter")
 ```
 
+![Comparison between Three Sentiment Dictionaries on Twitter](/image/three-sentiment-dictionaries-twitter.png)
+
 Comparing between Reddit and Twitter datasets, Twitter has generally more positive sentiments. This is possibly due to news snippets and links that are posted by news agencies. The contents are tend to be more positive regardless of which party are they on. Reddit has more texts per post, and therefore giving more weightage to negative words.
 
 #### Sentiment plots between incumbent and opposition (AFINN lexicon)
@@ -632,6 +637,8 @@ reddit_sentiments %>%
   scale_color_manual(values = c("deepskyblue2", "firebrick1"))
 ```
 
+![Incumbent vs Opposition on Reddit (AFINN)](/image/incumbent-vs-opposition-reddit-afinn.png)
+
 ##### Twitter
 
 ```
@@ -652,6 +659,8 @@ tweets_sentiments %>%
   scale_x_date(date_breaks = "day") + 
   scale_color_manual(values = c("deepskyblue2", "firebrick1"))
 ```
+
+![Incumbent vs Opposition on Twitter (AFINN)](/image/incumbent-vs-opposition-twitter-afinn.png)
 
 Based on the AFINN sentiment plots, the trend for the opposition is generally similar between Reddit and Twitter with a dip to negative between 4 and 5 July. This is probably due to the police investigation on Workers’ Party candidate Raeesah Khan over alleged online comments on race and religion. There is also a dip to negative for the incumbent party in Twitter, due to the withdrawal of PAP candidate Ivan Lim after allegations about his past conduct and behaviour.
 
