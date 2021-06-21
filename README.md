@@ -56,22 +56,8 @@ In our project, we will be analysing the sentiments of the 2020 Singapore Genera
 For our data science project, we activated the following packages, using the tidyverse approach.
 
 ```
-# If a package is installed, it will be loaded. If not, missing package(s) will
-# be installed from CRAN and then loaded.
+"RedditExtractoR", "rtweet", "tidyverse", "knitr", "tidytext", "lubridate", "ggrepel", "car", "ggpubr", "jtools", "huxtable", "haven", "broom", "modelr", "interactions", "WRS2", "rstatix", "shiny", "shinycssloaders"
 
-# Specify packages
-packages <- c("RedditExtractoR", "rtweet", "tidyverse", "knitr", "tidytext", "lubridate", "ggrepel", "car", "ggpubr", "jtools", "huxtable", "haven", "broom", "modelr", "interactions", "WRS2", "rstatix", "shiny", "shinycssloaders")
-
-# Load or install then load all
-package.check <- lapply(
-  packages,
-  FUN = function(x) {
-    if(!require(x, character.only = TRUE)) {
-      install.packages(x, dependencies = TRUE)
-      library(x, character.only = TRUE)
-    }
-  }
-)
 ```
 
 ### Import
@@ -82,119 +68,17 @@ There are two sources for our data: (a) Reddit; and (b) Twitter.
 
 We used the `get_reddit` function from the RedditExtractoR package on multiple occasions to scrape data from the Singapore subreddit. Each time, the output from the get_reddit function was saved as a RData file.
 
-```
-#sg_reddit <- get_reddit(subreddit = "singapore", page_threshold = 500, wait_time = 5)
-```
-
 These RData files were subsequently merged together, with duplicate rows removed. An output is saved as a RDS file.
-
-```
-#load("data/sg_reddit.RData")
-#load("data/sg_reddit2.RData")
-#load("data/sg_reddit3.RData")
-#load("data/sg_reddit5.RData")
-#load("data/reddit.RData")
-
-#reddits <- bind_rows(sg3, sg4, sg5, sg6, df) %>% 
-#    distinct()
-
-#saveRDS(reddits, "data/reddits.rds")
-```
 
 #### Twitter
 
-Twitter was scraped each day from 23 June to 12 July 2020 using the following lines of code, and the output was saved in a csv file. To cover as much tweets on elections as possible, search terms on the few common election hashtags, and all tweets from Singapore are used.
+Twitter was scraped each day from 23 June to 12 July 2020, and the output was saved in a csv file. To cover as much tweets on elections as possible, search terms on the few common election hashtags, and all tweets from Singapore are used:
 
 ```
-# Load Twitter API credentials
-#source("script/twitter_api.R")
-
-# Daily between 2020-06-23 to 2020-07-12
-#today_dat = Sys.Date()
-#yday_dat = Sys.Date() - 1
-
-#df_sgelections <- search_tweets(q = "#ge2020 OR #sgvotes OR #sgelections OR #sgelection",
-#                                n = 500000,
-#                                lang = "en",
-#                                since = yday_dat,
-#                                until = today_dat,
-#                                include_rts = F,
-#                                retryonratelimit = T)
-
-#save_as_csv(df_sgelections, paste("data/sgelections_", yday_dat, ".csv", sep = ""),
-#            prepend_ids = TRUE, na = "", fileEncoding = "UTF-8")
-
-#df_sgtweets <- search_tweets(n = 500000,
-#                             lang = "en",
-#                             since = yday_dat,
-#                             until = today_dat,
-#                             include_rts = F,
-#                             geocode = lookup_coords("singapore"),
-#                             retryonratelimit = T)
+#ge2020 OR #sgvotes OR #sgelections OR #sgelection
 ```
 
 The individual csv files were loaded and then merged together, with the outputs saved as RDS files.
-
-```
-#sgelections0623 <- read_csv("data/sgelections_2020-06-23.csv")
-#sgelections0624 <- read_csv("data/sgelections_2020-06-24.csv")
-#sgelections0625 <- read_csv("data/sgelections_2020-06-25.csv")
-#sgelections0626 <- read_csv("data/sgelections_2020-06-26.csv")
-#sgelections0627 <- read_csv("data/sgelections_2020-06-27.csv")
-#sgelections0628 <- read_csv("data/sgelections_2020-06-28.csv")
-#sgelections0629 <- read_csv("data/sgelections_2020-06-29.csv")
-#sgelections0630 <- read_csv("data/sgelections_2020-06-30.csv")
-#sgelections0701 <- read_csv("data/sgelections_2020-07-01.csv")
-#sgelections0702 <- read_csv("data/sgelections_2020-07-02.csv")
-#sgelections0703 <- read_csv("data/sgelections_2020-07-03.csv")
-#sgelections0704 <- read_csv("data/sgelections_2020-07-04.csv")
-#sgelections0705 <- read_csv("data/sgelections_2020-07-05.csv")
-#sgelections0706 <- read_csv("data/sgelections_2020-07-06.csv")
-#sgelections0707 <- read_csv("data/sgelections_2020-07-07.csv")
-#sgelections0708 <- read_csv("data/sgelections_2020-07-08.csv")
-#sgelections0709 <- read_csv("data/sgelections_2020-07-09.csv")
-#sgelections0710 <- read_csv("data/sgelections_2020-07-10.csv")
-#sgelections0711 <- read_csv("data/sgelections_2020-07-11.csv")
-#sgelections0712 <- read_csv("data/sgelections_2020-07-12.csv")
-
-#sgelections <- bind_rows(
-#    sgelections0623, sgelections0624, sgelections0625, sgelections0626, sgelections0627,
-#    sgelections0628, sgelections0629, sgelections0630, sgelections0701, sgelections0702,
-#    sgelections0703, sgelections0704, sgelections0705, sgelections0706, sgelections0707,
-#    sgelections0708, sgelections0709, sgelections0710, sgelections0711, sgelections0712)
-
-#saveRDS(sgelections, "data/sgelections.rds")
-
-# Merge Singapore datasets
-#sgtweets0623 <- read_csv("data/sgtweets_2020-06-23.csv")
-#sgtweets0624 <- read_csv("data/sgtweets_2020-06-24.csv")
-#sgtweets0625 <- read_csv("data/sgtweets_2020-06-25.csv")
-#sgtweets0626 <- read_csv("data/sgtweets_2020-06-26.csv")
-#sgtweets0627 <- read_csv("data/sgtweets_2020-06-27.csv")
-#sgtweets0628 <- read_csv("data/sgtweets_2020-06-28.csv")
-#sgtweets0629 <- read_csv("data/sgtweets_2020-06-29.csv")
-#sgtweets0630 <- read_csv("data/sgtweets_2020-06-30.csv")
-#sgtweets0701 <- read_csv("data/sgtweets_2020-07-01.csv")
-#sgtweets0702 <- read_csv("data/sgtweets_2020-07-02.csv")
-#sgtweets0703 <- read_csv("data/sgtweets_2020-07-03.csv")
-#sgtweets0704 <- read_csv("data/sgtweets_2020-07-04.csv")
-#sgtweets0705 <- read_csv("data/sgtweets_2020-07-05.csv")
-#sgtweets0706 <- read_csv("data/sgtweets_2020-07-06.csv")
-#sgtweets0707 <- read_csv("data/sgtweets_2020-07-07.csv")
-#sgtweets0708 <- read_csv("data/sgtweets_2020-07-08.csv")
-#sgtweets0709 <- read_csv("data/sgtweets_2020-07-09.csv")
-#sgtweets0710 <- read_csv("data/sgtweets_2020-07-10.csv")
-#sgtweets0711 <- read_csv("data/sgtweets_2020-07-11.csv")
-#sgtweets0712 <- read_csv("data/sgtweets_2020-07-12.csv")
-
-#sgtweets <- bind_rows(
-#    sgtweets0623, sgtweets0624, sgtweets0625, sgtweets0626, sgtweets0627,
-#    sgtweets0628, sgtweets0629, sgtweets0630, sgtweets0701, sgtweets0702,
-#    sgtweets0703, sgtweets0704, sgtweets0705, sgtweets0706, sgtweets0707,
-#    sgtweets0708, sgtweets0709, sgtweets0710, sgtweets0711, sgtweets0712)
-
-#saveRDS(sgtweets, "data/sgtweets.rds")
-```
 
 ### Tidy & Transform
 
@@ -758,6 +642,8 @@ df %>%
   theme_classic()
 ```
 
+![Boxplot of IVs](/image/boxplotof-IVs.png)
+
 The `identify_outlier` function from the `rstatix` package could also be used to identify outliers by group. Similar to the boxplots, the results showed that there are no outliers in our dataset.
 
 ```
@@ -775,6 +661,8 @@ df %>%
   labs(title = "Q-Q Plots")
 ```
 
+![Q-Q Plots](/image/qq-plots.png)
+
 Levene’s Test for Homogeneity of Variance was conducted on the dataset. The assumption for homogeneity was violated.
 
 ```
@@ -782,6 +670,8 @@ df %>%
   leveneTest(afinn_value ~ as.factor(pol_party) * as.factor(period_2020) * as.factor(pol_party), data = .) %>%
   tidy()
 ```
+
+![Levene's Test](/image/levenes-test.png)
 
 ANOVA models remain robust even if the assumption of homogeneity of variance is violated. Robustness is dependent on the sample sizes across groups. In our case, the sample sizes across groups are not similar to one another. Hence, we have to use a non-parametric equivalent to the 3-way between-groups ANOVA.
 
@@ -840,20 +730,7 @@ A significant three-way interaction could be followed up with the following post
 
 A three-way interaction suggests that one, or more, two-way interactions differ across the levels of a third variable. In our case, it could mean that there are differences in the interaction of `period_2020` and `platform` at each level of `pol_party`. We could visualise the three-way interaction as follows. From eye-balling the plot, comments made on Twitter were generally more positive than on Reddit, with comments made specifically on the oppositional parties more positive relative to the incumbent party.
 
-```
-df %>%
-  filter(!is.na(period_2020)) %>%
-  group_by(pol_party, platform, period_2020) %>%
-  summarize(afinn_value = mean(afinn_value)) %>%
-  ggplot(aes(x = period_2020, y = afinn_value, group = platform, col = platform)) +
-  geom_line() +
-  geom_point() +
-  facet_grid(~pol_party) + 
-  labs(title = "Visualising three-way interactions",
-       x = "Period",
-       y = "Sentiment", 
-       col = "Political Party")
-```
+![Three-way Interaction](/image/three-way-interaction.png)
 
 We then subset the data frame by the `pol_party` variable and conduct separate two-way ANOVAs, for each `pol_party`. There was a significant interaction between `period_2020` and `platform`, p = 0.005 for the Incumbent party. Similarly, there was a significant interaction between the same two variables for the Opposition party, p = 0.001. This suggests that at certain phases, sentiment levels differ across platforms. From our above visualisation, it can be observed that the second phase has the lowest sentiment across all four groups (Incumbent party and Reddit platform; Incumbent party and Twitter platform; Opposition party and Reddit platform; Opposition Part and Twitter Platform).
 
@@ -929,6 +806,8 @@ df %>%
   theme_classic()
 ```
 
+![Sentiment across the Three Phases](/image/sentiment-across-three-phases.png)
+
 #### Logistic Regression
 
 To investigate `bing` sentiment data, logistic regression was used to take a look at the main effects and if there are interactions that lead to how positive or negative the sentiments are. Categorical variables are converted to binary or integers.
@@ -947,12 +826,7 @@ df_log <- df %>%
 
 The main effects are clearly significant with each independent variable (i.e. `platform`, `period` and `pol_party`) contributing to the model. Reddit (`twitter = 0`) is slightly more negative than Twitter (`twitter = 1`), while Opposition has more positive sentiments than Incumbent in either social media platforms. The sentiments generally became gradually negative across the election period.
 
-```
-logistic_mainE <- glm(bing ~ twitter + period + opposition, 
-                      data = df_log, family = binomial(link = "logit"))
-
-tidy(logistic_mainE)
-```
+![Logistic Regression Main Effects](/image/LR-main-effects.png)
 
 ```
 fig1 <- df_log %>% 
@@ -966,31 +840,21 @@ ggplot(data = df_log, aes(x = period, y = bing)) +
   facet_grid(~twitter)
 ```
 
+![Probability of Positive Bing Sentiment](/image/prob-of-positive-bing.png)
+
 ##### Interaction effects
 
 We explore the interactions between two dummy variables: `twitter` and `opposition`. From the output, the interaction effect between the two variables is significant (p = 0.005).
 
-```
-logistic_interactE <- glm(bing ~ twitter * opposition + period, 
-                      data = df_log, family = binomial(link = "logit"))
-
-tidy(logistic_interactE)
-```
+![Logistic Regression Interaction Effects](/image/LR-interaction-effects.png)
 
 ##### Model comparison
 
 Main effects and interaction effects models are compared. It shows that Model 2 (Interaction Effects Model) is slightly better than Model 1 (Main Effects Model).
 
-```
-export_summs(logistic_mainE, logistic_interactE,
-             modemodel.names = c("Main Effects Only", "Platform * Period"),
-             error_format = "(p = {p.value})",
-             digits = 3)
-```
+![Logistic Regression Model Comparison 1](/image/LR-model-comparison-1.png)
 
-```
-anova(logistic_mainE, logistic_interactE, test = "LR")
-```
+![Logistic Regression Model Comparison 2](/image/LR-model-comparison-2.png)
 
 ##### Probing interactions
 
