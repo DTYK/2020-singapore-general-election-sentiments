@@ -309,36 +309,7 @@ tweets_sentiments <- tweets_sentiments %>%
 
 Next, the `platform` variable was created to indicate which platform (Reddit or Twitter) a given observation belongs to. This was done separately for each dataset.
 
-```
-reddit <- reddit_sentiments %>% 
-  mutate(platform = "reddit") %>% 
-  select(date, platform, everything())
-
-twitter <- tweets_sentiments %>%
-    mutate(platform = "twitter") %>%
-    select(date, platform, everything())
-```
-
 Finally, both Reddit and Twitter data were merged together, and the final `df` data will be used for exploratory and analysis.
-
-```
-df <- bind_rows(reddit, twitter)
-glimpse(df)
-```
-
-```
-## Rows: 68,228
-## Columns: 9
-## $ date           <date> 2015-08-25, 2015-08-25, 2015-08-25, 2015-08-25, 201...
-## $ platform       <chr> "reddit", "reddit", "reddit", "reddit", "reddit", "r...
-## $ period_2015    <chr> "first phase", "first phase", "first phase", "first ...
-## $ period_2020    <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, ...
-## $ pol_party      <chr> "incumbent", "incumbent", "incumbent", "incumbent", ...
-## $ word           <chr> "advantage", "scream", "scream", "scream", "scream",...
-## $ afinn_value    <dbl> 2, -2, -2, -2, -2, -2, -2, -2, -2, -2, 2, 2, 2, 2, 2...
-## $ nrc_sentiment  <chr> "positive", "anger", "disgust", "fear", "negative", ...
-## $ bing_sentiment <chr> "positive", "negative", "negative", "negative", "neg...
-```
 
 ### Explore and Visualise
 
@@ -642,7 +613,7 @@ df %>%
   theme_classic()
 ```
 
-![Boxplot of IVs](/image/boxplotof-IVs.png)
+![Boxplot of IVs](/image/boxplot-of-IVs.png)
 
 The `identify_outlier` function from the `rstatix` package could also be used to identify outliers by group. Similar to the boxplots, the results showed that there are no outliers in our dataset.
 
@@ -730,7 +701,7 @@ A significant three-way interaction could be followed up with the following post
 
 A three-way interaction suggests that one, or more, two-way interactions differ across the levels of a third variable. In our case, it could mean that there are differences in the interaction of `period_2020` and `platform` at each level of `pol_party`. We could visualise the three-way interaction as follows. From eye-balling the plot, comments made on Twitter were generally more positive than on Reddit, with comments made specifically on the oppositional parties more positive relative to the incumbent party.
 
-![Three-way Interaction](/image/three-way-interaction.png)
+![Three-way Interactions](/image/three-way-interactions.png)
 
 We then subset the data frame by the `pol_party` variable and conduct separate two-way ANOVAs, for each `pol_party`. There was a significant interaction between `period_2020` and `platform`, p = 0.005 for the Incumbent party. Similarly, there was a significant interaction between the same two variables for the Opposition party, p = 0.001. This suggests that at certain phases, sentiment levels differ across platforms. From our above visualisation, it can be observed that the second phase has the lowest sentiment across all four groups (Incumbent party and Reddit platform; Incumbent party and Twitter platform; Opposition party and Reddit platform; Opposition Part and Twitter Platform).
 
@@ -860,17 +831,7 @@ Main effects and interaction effects models are compared. It shows that Model 2 
 
 The first interaction model is visualised, and simple slopes analysis is performed.
 
-```
-interact_plot(logistic_interactE, pred = "opposition", modx = "twitter",
-              modx.labels = c("Reddit", "Twitter"),
-              interval = TRUE, int.width = 0.95, 
-              colors = c("orange", "blue"),
-              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform")
-```
-
-```
-sim_slopes(logistic_interactE, pred = opposition, modx = twitter, johnson_neyman = TRUE)
-```
+![Logistic Regression Interaction Model](/image/LR-interaction-model.png)
 
 ```
 ## JOHNSON-NEYMAN INTERVAL 
@@ -897,52 +858,13 @@ sim_slopes(logistic_interactE, pred = opposition, modx = twitter, johnson_neyman
 
 The increase in both independent variables `opposition` and `twitter` (i.e. for opposition on Twitter) were associated with increased value of `bing`. `opposition` (`pol_party = "opposition"`) was predictive of higher levels of `bing` at high `twitter` (`platform = "twitter"`) than at low `twitter` (`platform = "reddit"`).
 
-```
-interact_plot(logistic_interactE, pred = "opposition", modx = "twitter",
-              modx.labels = c("Reddit", "Twitter"),
-              interval = TRUE, int.width = 0.95, 
-              colors = c("orange", "blue"),
-              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform") +
-  scale_x_continuous(breaks = 0:1, label = c("Incumbent", "Opposition")) +
-  labs(title = "Singapore Parliamentary General Elections 2020",
-       subtitle = "The interaction of political party and platform\non the probability of positive bing sentiment",
-       x = "Political Party",
-       y = "Probability of Positive bing Sentiment",
-       caption = "Source: Reddit & Twitter") + 
-  annotate("text",
-           x = 0.75, y = 0.44, size = 3,
-           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
-  theme(legend.position = "top")
-```
+![Logistic Regression Interaction Plot](/image/LR-interaction-plot.png)
 
 Other two-way interactions and three-way interaction between the three variables are also investigated.
 
 ##### Two-way interaction between twitter and period
 
-```
-logistic_interactE2w1 <- glm(bing ~ twitter * period + opposition, 
-                          data = df_log, family = binomial(link = "logit"))
-
-interact_plot(logistic_interactE2w1, pred = "period", modx = "twitter",
-              modx.labels = c("Reddit", "Twitter"),
-              interval = TRUE, int.width = 0.95, 
-              colors = c("orange", "blue"),
-              vary.lty = TRUE, line.thickness = 1, legend.main = "Plaform") + 
-  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
-  labs(title = "Singapore Parliamentary General Elections 2020",
-       subtitle = "The interaction of election period and platform\non the probability of positive bing sentiment",
-       x = "Election Period",
-       y = "Probability of Positive bing Sentiment",
-       caption = "Source: Reddit & Twitter") + 
-  annotate("text",
-           x = 1.5, y = 0.42, size = 3,
-           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
-  theme(legend.position = "top")
-```
-
-```
-sim_slopes(logistic_interactE2w1, pred = period, modx = twitter, johnson_neyman = TRUE)
-```
+![Logistic Regression Two-way Interactions across Platform and Period](/image/LR-two-way-interactions-platform-period.png)
 
 ```
 ## JOHNSON-NEYMAN INTERVAL 
@@ -971,30 +893,7 @@ In contrast with the first two-way interaction model, the `period` variable has 
 
 ##### Two-way interaction between opposition and period
 
-```
-logistic_interactE2w2 <- glm(bing ~ twitter + opposition * period, 
-                           data = df_log, family = binomial(link = "logit"))
-
-interact_plot(logistic_interactE2w2, pred = "period", modx = "opposition",    
-              modx.labels = c("Incumbent", "Opposition"),
-              interval = TRUE, int.width = 0.95, 
-              colors = c("red", "blue"),
-              vary.lty = TRUE, line.thickness = 1, legend.main = "Political Party") + 
-  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
-  labs(title = "Singapore Parliamentary General Elections 2020",
-       subtitle = "The interaction of election and political party period\non the probability of positive bing sentiment",
-       x = "Election Period",
-       y = "Probability of Positive bing Sentiment",
-       caption = "Source: Reddit & Twitter") + 
-  annotate("text",
-           x = 1.5, y = 0.425, size = 3,
-           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
-  theme(legend.position = "top")
-```
-
-```
-sim_slopes(logistic_interactE2w2, pred = period, modx = opposition, johnson_neyman = TRUE)
-```
+![Logistic Regression Two-way Interactions across Party and Period](/image/LR-two-way-interactions-party-period.png)
 
 ```
 ## JOHNSON-NEYMAN INTERVAL 
