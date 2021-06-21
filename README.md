@@ -9,7 +9,7 @@ The Parliament in Singapore may be dissolved before the expiry of its five-year 
 
 Below are the percentage of votes between incumbent and opposition, and of voters turnout for parliamentary general elections between 1988 (when GRC scheme is introduced) and 2020. Data for 2015 and earlier are scraped from Data.gov.sg using CKAN API while data for 2020 is scraped from Wikipedia (which is sourced from Elections Department Singapore and Channel News Asia) using rvest package.
 
-![GE Plot](/image/ge_plot.png)
+<img src="/image/ge_plot.png" width="150">
 
 The election process consists of the following:
 
