@@ -5,7 +5,7 @@
 
 ### Introduction
 
-The Parliament in Singapore may be dissolved before the expiry of its five-year term by the President on the advice of the Prime Minister. The general election must be held within three months of the Parliament’s dissolution. There are two types of constituency or electoral division: single member constituency (SMC) and group representation constituency (GRC). SMC, as the name suggests, has only one member of parliament (MP), while GRC has three to six MPs. The GRC scheme was introduced in the 1988 general election to ensure that minority groups are represented in Parliament.
+The Parliament in Singapore may be dissolved before the expiry of its five-year term by the President on the advice of the Prime Minister. The general election must be held within three months of the Parliament’s dissolution. There are two types of constituency or electoral division: single member constituency (SMC) and group representation constituency (GRC). SMC, as the name suggests, has only one member of parliament (MP), while GRC has three to six MPs. The GRC scheme was introduced in the 1988 general election to ensure that minority groups are represented in Parliament.<a name="1">[1]</a>
 
 Below are the percentage of votes between incumbent and opposition, and of voters turnout for parliamentary general elections between 1988 (when GRC scheme is introduced) and 2020. Data for 2015 and earlier are scraped from Data.gov.sg using CKAN API while data for 2020 is scraped from Wikipedia (which is sourced from Elections Department Singapore and Channel News Asia) using rvest package.
 
@@ -1037,3 +1037,7 @@ Fabian’s contributions:
 * Incumbent vs Opposition AFINN Sentiment Plots
 * Logistic Regression models
 * Text formatting and language
+
+### References
+
+<sup>[[1]](#1)</sup>: Election Department Singapore
