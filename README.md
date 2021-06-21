@@ -14,6 +14,8 @@ source("Tan_Kong-ge_results.R")
 ge_plot
 ```
 
+![GE Plot](/image/ge_plot.png)
+
 The election process consists of the following:
 
 Nomination Day - Prospective candidates submit their nomination documents and deposits between 11:00 am and 12:00 pm. If there is only one candidate or one group of candidates for SMC and GRC respectively, it will be declared that the candidate or the group of candidates have been elected as MP(s). This is known as walkover.
