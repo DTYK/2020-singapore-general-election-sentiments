@@ -1028,12 +1028,21 @@ Fabian’s contributions:
 ### References
 
 <a name="footnote1">1</a>: [Election Department Singapore](www.eld.gov.sg/)
+
 <a name="footnote2">2</a>: [RIP wordclouds, long live CHATTERPLOTS](https://towardsdatascience.com/rip-wordclouds-long-live-chatterplots-e76a76896098)
+
 <a name="footnote3">3</a>: [GE2020: WP chief Pritam Singh says he looks forward to serving as Leader of the Opposition](https://www.channelnewsasia.com/news/singapore/ge2020-wp-chief-pritam-singh-says-he-looks-forward-to-serving-as-12924456)
+
 <a name="footnote4">4</a>: [PAP lost the youth vote in Sengkang GRC](https://mothership.sg/2020/07/pap-lost-sengkang-grc-why/)
+
 <a name="footnote5">5</a>: [Police investigating WP candidate Raeesah Khan over alleged online comments on race, religion](https://www.channelnewsasia.com/news/singapore/raeesah-khan-workers-party-police-reports-race-ge2020-sengkang-12903248)
+
 <a name="footnote6">6</a>: [Singapore GE 2020: PAP new face Ivan Lim withdraws from election following allegations about his past behaviour](https://www.straitstimes.com/singapore/singapore-ge-2020-pap-new-face-ivan-lim-withdraws-as-a-candidate)
+
 <a name="footnote7">7</a>: [The Problem with Using Tests for Statistical Assumptions](https://www.theanalysisfactor.com/the-problem-with-tests-for-statistical-assumptions/)
+
 <a name="footnote8">8</a>: [WRS2: A Collection of Robust Statistical Methods](https://cran.r-project.org/web/packages/WRS2/index.html)
+
 <a name="footnote9">9</a>: [ANOVA in R](https://www.datanovia.com/en/lessons/anova-in-r/)
+
 <a name="footnote10">10</a>: [FAQ How Can I Understand A Three-way Interaction In ANOVA?](https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faqhow-can-i-understand-a-three-way-interaction-in-anova/)
