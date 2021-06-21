@@ -1,6 +1,6 @@
 ## 2020 Singapore General Election Sentiments across Two Social Media Platforms
 
-### David Tan & Fabian Kong
+### David Tan & [Fabian Kong](https://github.com/fabskong)
 ### 02 August 2020
 
 ### Introduction
@@ -1027,7 +1027,7 @@ Fabian’s contributions:
 
 ### References
 
-<a name="footnote1">1</a>: [Election Department Singapore](www.eld.gov.sg/)
+<a name="footnote1">1</a>: [Election Department Singapore](https://www.eld.gov.sg/)
 
 <a name="footnote2">2</a>: [RIP wordclouds, long live CHATTERPLOTS](https://towardsdatascience.com/rip-wordclouds-long-live-chatterplots-e76a76896098)
 
