@@ -922,26 +922,7 @@ The same was observed when `twitter` variable (between Reddit and Twitter) is re
 
 ##### Three-way interaction
 
-```
-logistic_interactE3w <- glm(bing ~ twitter * opposition * period, 
-                           data = df_log, family = binomial(link = "logit"))
-
-interact_plot(logistic_interactE3w, pred = "period", modx = "opposition", mod2 = "twitter",   
-              modx.labels = c("Incumbent", "Opposition"), mod2.labels = c("Reddit", "Twitter"),
-              interval = TRUE, int.width = 0.95, 
-              colors = c("red", "blue"),
-              vary.lty = TRUE, line.thickness = 1, legend.main = "Political Party") + 
-  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
-  labs(title = "Singapore Parliamentary General Elections 2020",
-       subtitle = "The interaction of election period, political party and platform\non the probability of positive bing sentiment",
-       x = "Election Period",
-       y = "Probability of Positive bing Sentiment",
-       caption = "Source: Reddit & Twitter")
-```
-
-```
-sim_slopes(logistic_interactE3w, pred = period, modx = opposition, mod2 = twitter, johnson_neyman = TRUE)
-```
+![Logistic Regression Three-way Interaction](/image/LR-three-way-interaction.png)
 
 ```
 ## ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ While twitter (2nd moderator) = 0.00 (0) ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ 
@@ -997,40 +978,11 @@ In this three-way interaction model, across the election period, the incumbent h
 
 To gain a well-rounded understanding of Singapore Elections, we cannot rely on data from one election alone. We need data from multiple elections to compare and contrast against one another. We have managed to obtain some Reddit data from the 2015 Singapore General Election. The dataset was reshaped and the trends in sentiment for both the 2015 and 2020 Singapore General Elections were plotted below.
 
-```
-two_elections <- df %>%
-  filter(platform == "reddit") %>%
-  mutate(year = case_when(
-    !is.na(period_2015) ~ "2015",
-    !is.na(period_2020) ~ "2020")) %>%
-  unite(col = "period", period_2015:period_2020, na.rm = TRUE, remove = FALSE)
-
-two_elections %>%
-  group_by(date, year, period, pol_party) %>%
-  summarize(afinn_value = mean(afinn_value)) %>%
-  ggplot(aes(x = date, y = afinn_value, group = pol_party, col = pol_party)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "2015 vs 2020 Elections",
-       x = "Period",
-       y = "Sentiment",
-       col = "Political Party",
-       caption = "Source: Reddit") +
-  facet_grid(~year, scales = "free_x") +
-  theme(axis.text.x = element_text(angle = 45)) +
-  scale_x_date(date_breaks = "2 days")
-```
+![2015 vs 2020 Elections](/image/2015-vs-2020-elections.png)
 
 A One-way Between-Groups ANOVA was conducted to analyse the effect of `year` on overall sentiments across both elections. There was a significant difference in sentiments between the two elections, with the 2015 election more negative than the 2020 election.
 
-```
-year_model <- aov(afinn_value ~ year, data = two_elections) %>%
-  tidy()
-
-two_elections %>%
-  group_by(year) %>%
-  summarize(afinn_value = mean(afinn_value))
-```
+![Sentiment across both Elections](/image/sentiment-across-years.png)
 
 ### Interpretation of the Results
 
