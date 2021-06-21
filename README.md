@@ -236,11 +236,11 @@ Comparing between Reddit and Twitter datasets, Twitter has generally more positi
 
 ##### Reddit
 
-![Incumbent vs Opposition on Reddit (AFINN)](/image/incumbent-vs-opposition-reddit-afinn.png)
+<img src="/image/incumbent-vs-opposition-reddit-afinn.png" width="500">
 
 ##### Twitter
 
-![Incumbent vs Opposition on Twitter (AFINN)](/image/incumbent-vs-opposition-twitter-afinn.png)
+<img src="/image/incumbent-vs-opposition-twitter-afinn.png" width="500">
 
 Based on the AFINN sentiment plots, the trend for the opposition is generally similar between Reddit and Twitter with a dip to negative between 4 and 5 July. This is probably due to the police investigation on Workers’ Party candidate Raeesah Khan over alleged online comments on race and religion.<sup>[5](#footnote5)</sup> There is also a dip to negative for the incumbent party in Twitter, due to the withdrawal of PAP candidate Ivan Lim after allegations about his past conduct and behaviour.<sup>[6](#footnote6)</sup>
 
@@ -273,17 +273,17 @@ The third assumption, independence of observations, cannot be ascertained. It wo
 
 Significant outliers could be identified with the boxplots of `afinn_value` for each combination of independent variables. The results show that there are no outliers in our dataset. This is expected since `afinn_value` is between -5 and 5.
 
-![Boxplot of IVs](/image/boxplot-of-IVs.png)
+<img src="/image/boxplot-of-IVs.png" width="500">
 
 The `identify_outlier` function from the `rstatix` package could also be used to identify outliers by group. Similar to the boxplots, the results showed that there are no outliers in our dataset.
 
 Next, we used Q-Q plots to identify whether the `afinn_value` variable is normally distributed for each combination of independent variables. As the data points do not fall along the the reference line, the assumption for normality has been violated.
 
-![Q-Q Plots](/image/qq-plots.png)
+<img src="/image/qq-plots.png" width="500">
 
 Levene’s Test for Homogeneity of Variance was conducted on the dataset. The assumption for homogeneity was violated.
 
-![Levene's Test](/image/levenes-test.png)
+<img src="/image/levenes-test.png" width="500">
 
 ANOVA models remain robust even if the assumption of homogeneity of variance is violated. Robustness is dependent on the sample sizes across groups.<sup>[7](#footnote7)</sup> In our case, the sample sizes across groups are not similar to one another. Hence, we have to use a non-parametric equivalent to the 3-way between-groups ANOVA.
 
@@ -330,7 +330,7 @@ A significant three-way interaction could be followed up with the following post
 
 A three-way interaction suggests that one, or more, two-way interactions differ across the levels of a third variable.<sup>[10](#footnote10)</sup> In our case, it could mean that there are differences in the interaction of `period_2020` and `platform` at each level of `pol_party`. We could visualise the three-way interaction as follows. From eye-balling the plot, comments made on Twitter were generally more positive than on Reddit, with comments made specifically on the oppositional parties more positive relative to the incumbent party.
 
-![Three-way Interactions](/image/three-way-interactions.png)
+<img src="/image/three-way-interactions.png" width="500">
 
 We then subset the data frame by the `pol_party` variable and conduct separate two-way ANOVAs, for each `pol_party`. There was a significant interaction between `period_2020` and `platform`, p = 0.005 for the Incumbent party. Similarly, there was a significant interaction between the same two variables for the Opposition party, p = 0.001. This suggests that at certain phases, sentiment levels differ across platforms. From our above visualisation, it can be observed that the second phase has the lowest sentiment across all four groups (Incumbent party and Reddit platform; Incumbent party and Twitter platform; Opposition party and Reddit platform; Opposition Part and Twitter Platform).
 
@@ -392,7 +392,7 @@ lincon(afinn_value ~ period_2020, data = df, alpha = 0.004166667)
 ## second phase vs. third phase 0.15047  0.05472  0.24621       0
 ```
 
-![Sentiment across the Three Phases](/image/sentiment-across-three-phases.png)
+<img src="/image/sentiment-across-three-phases.png" width="500">
 
 #### Logistic Regression
 
@@ -402,29 +402,29 @@ To investigate `bing` sentiment data, logistic regression was used to take a loo
 
 The main effects are clearly significant with each independent variable (i.e. `platform`, `period` and `pol_party`) contributing to the model. Reddit (`twitter = 0`) is slightly more negative than Twitter (`twitter = 1`), while Opposition has more positive sentiments than Incumbent in either social media platforms. The sentiments generally became gradually negative across the election period.
 
-![Logistic Regression Main Effects](/image/LR-main-effects.png)
+<img src="/image/LR-main-effects.png" width="500">
 
-![Probability of Positive Bing Sentiment](/image/prob-of-positive-bing.png)
+<img src="/image/prob-of-positive-bing.png" width="500">
 
 ##### Interaction effects
 
 We explore the interactions between two dummy variables: `twitter` and `opposition`. From the output, the interaction effect between the two variables is significant (p = 0.005).
 
-![Logistic Regression Interaction Effects](/image/LR-interaction-effects.png)
+<img src="/image/LR-interaction-effects.png" width="500">
 
 ##### Model comparison
 
 Main effects and interaction effects models are compared. It shows that Model 2 (Interaction Effects Model) is slightly better than Model 1 (Main Effects Model).
 
-![Logistic Regression Model Comparison 1](/image/LR-model-comparison-1.png)
+<img src="/image/LR-model-comparison-1.png" width="500">
 
-![Logistic Regression Model Comparison 2](/image/LR-model-comparison-2.png)
+<img src="/image/LR-model-comparison-2.png" width="500">
 
 ##### Probing interactions
 
 The first interaction model is visualised, and simple slopes analysis is performed.
 
-![Logistic Regression Interaction Model](/image/LR-interaction-model.png)
+<img src="/image/LR-interaction-model.png" width="500">
 
 ```
 ## JOHNSON-NEYMAN INTERVAL 
@@ -451,13 +451,13 @@ The first interaction model is visualised, and simple slopes analysis is perform
 
 The increase in both independent variables `opposition` and `twitter` (i.e. for opposition on Twitter) were associated with increased value of `bing`. `opposition` (`pol_party = "opposition"`) was predictive of higher levels of `bing` at high `twitter` (`platform = "twitter"`) than at low `twitter` (`platform = "reddit"`).
 
-![Logistic Regression Interaction Plot](/image/LR-interaction-plot.png)
+<img src="/image/LR-interaction-plot.png" width="500">
 
 Other two-way interactions and three-way interaction between the three variables are also investigated.
 
 ##### Two-way interaction between twitter and period
 
-![Logistic Regression Two-way Interactions across Platform and Period](/image/LR-two-way-interactions-platform-period.png)
+<img src="/image/LR-two-way-interactions-platform-period.png" width="500">
 
 ```
 ## JOHNSON-NEYMAN INTERVAL 
@@ -486,7 +486,7 @@ In contrast with the first two-way interaction model, the `period` variable has 
 
 ##### Two-way interaction between opposition and period
 
-![Logistic Regression Two-way Interactions across Party and Period](/image/LR-two-way-interactions-party-period.png)
+<img src="/image/LR-two-way-interactions-party-period.png" width="500">
 
 ```
 ## JOHNSON-NEYMAN INTERVAL 
@@ -515,7 +515,7 @@ The same was observed when `twitter` variable (between Reddit and Twitter) is re
 
 ##### Three-way interaction
 
-![Logistic Regression Three-way Interaction](/image/LR-three-way-interaction.png)
+<img src="/image/LR-three-way-interaction.png" width="500">
 
 ```
 ## ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ While twitter (2nd moderator) = 0.00 (0) ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ 
@@ -571,11 +571,11 @@ In this three-way interaction model, across the election period, the incumbent h
 
 To gain a well-rounded understanding of Singapore Elections, we cannot rely on data from one election alone. We need data from multiple elections to compare and contrast against one another. We have managed to obtain some Reddit data from the 2015 Singapore General Election. The dataset was reshaped and the trends in sentiment for both the 2015 and 2020 Singapore General Elections were plotted below.
 
-![2015 vs 2020 Elections](/image/2015-vs-2020-elections.png)
+<img src="/image/2015-vs-2020-elections.png" width="500">
 
 A One-way Between-Groups ANOVA was conducted to analyse the effect of `year` on overall sentiments across both elections. There was a significant difference in sentiments between the two elections, with the 2015 election more negative than the 2020 election.
 
-![Sentiment across both Elections](/image/sentiment-across-years.png)
+<img src="/image/sentiment-across-years.png" width="500">
 
 ### Interpretation of the Results
 
