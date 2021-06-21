@@ -11,15 +11,7 @@ Below are the percentage of votes between incumbent and opposition, and of voter
 
 <img src="/image/ge_plot.png" width="500">
 
-The election process consists of the following:
-
-Nomination Day - Prospective candidates submit their nomination documents and deposits between 11:00 am and 12:00 pm. If there is only one candidate or one group of candidates for SMC and GRC respectively, it will be declared that the candidate or the group of candidates have been elected as MP(s). This is known as walkover.
-
-Campaigning - Candidates can only campaign up to the start of Cooling-off Day.
-
-Cooling-off Day - This is the eve before Polling Day. Campaigning is prohibited, and the electorate is given some time to reflect on the issues raised before going to the polls.
-
-Polling Day - Electors will go to their allotted polling stations to cast their vote any time between 8:00 am to 8:00 pm. After the close of polls, ballot boxes will be sealed and transported to counting centres.
+Given that the incumbent party (PAP) has been governing since Singapore’s independence, people may have negative sentiments towards the government and yearn for a change. This has led us to want to explore the public sentiments. Elections are tense periods for both the electorate and the election candidates. Emotions are often riled up as the electorate debate over the merits of their preferred candidates against that of others. Social media platforms are often host to these debates as people flock to voice their preferences through these channels. This is even more so during the pandemic as the election process is moved mostly online. The electorate reacts to different news and falsehoods pertaining to the candidates and political parties as a whole during the course of the election process.
 
 The election process consists of the following:
 
@@ -39,7 +31,7 @@ In our project the election process is split into three distinct phases:
 * Second phase: Day after Nomination Date to Polling Date
 * Third phase: Day after Polling Date to the subsequent day
 
-![Singapore Parlimentary General Election Process and its Phases](/image/Tan_Kong-election.png)
+<img src="/image/Tan_Kong-election.png" width="500">
 
 ### Problem Statement
 
@@ -214,13 +206,13 @@ Chatter plots were used to display the most frequently occurring words against t
 
 Only 2020 data are selected for Reddit in order to be comparable with Twitter.
 
-![Reddit Chatter Plot](/image/reddit-chatter-plot.png)
+<img src="/image/reddit-chatter-plot.png" width="500">
 
 Interestingly, the top 50 words from Reddit are all positive.
 
 ##### Twitter
 
-![Twitter Chatter Plot](/image/twitter-chatter-plot.png)
+<img src="/image/twitter-chatter-plot.png" width="500">
 
 Twitter has top 50 words that have more balanced sentiments between positive and negative compared to Reddit.
 
@@ -232,11 +224,11 @@ In contrast, the top few most negative words in Twitter are “bad”, “lost�
 
 ##### Reddit
 
-![Comparison between Three Sentiment Dictionaries on Reddit](/image/three-sentiment-dictionaries-reddit.png)
+<img src="/image/three-sentiment-dictionaries-reddit.png" width="500">
 
 ##### Twitter
 
-![Comparison between Three Sentiment Dictionaries on Twitter](/image/three-sentiment-dictionaries-twitter.png)
+<img src="/image/three-sentiment-dictionaries-twitter.png" width="500">
 
 Comparing between Reddit and Twitter datasets, Twitter has generally more positive sentiments. This is possibly due to news snippets and links that are posted by news agencies. The contents are tend to be more positive regardless of which party are they on. Reddit has more texts per post, and therefore giving more weightage to negative words.
 
