@@ -1093,3 +1093,221 @@ sim_slopes(logistic_interactE2w1, pred = period, modx = twitter, johnson_neyman 
 ```
 
 In contrast with the first two-way interaction model, the `period` variable has a negative interaction. Increases in both independent variables `period` and `twitter` were associated with decreased values of `bing`. The effects of the social media platforms on the relationship of `period` and `bing` was slightly greater at the earlier part of the election process, slightly more for Twitter.
+
+##### Two-way interaction between opposition and period
+
+```
+logistic_interactE2w2 <- glm(bing ~ twitter + opposition * period, 
+                           data = df_log, family = binomial(link = "logit"))
+
+interact_plot(logistic_interactE2w2, pred = "period", modx = "opposition",    
+              modx.labels = c("Incumbent", "Opposition"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("red", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Political Party") + 
+  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
+  labs(title = "Singapore Parliamentary General Elections 2020",
+       subtitle = "The interaction of election and political party period\non the probability of positive bing sentiment",
+       x = "Election Period",
+       y = "Probability of Positive bing Sentiment",
+       caption = "Source: Reddit & Twitter") + 
+  annotate("text",
+           x = 1.5, y = 0.425, size = 3,
+           label = "The shaded areas denote 95% confidence intervals.\nThe vertical line marks the boundary between \nregions of significance and non-significance\nbased on alpha at 5%") + 
+  theme(legend.position = "top")
+```
+
+```
+sim_slopes(logistic_interactE2w2, pred = period, modx = opposition, johnson_neyman = TRUE)
+```
+
+```
+## JOHNSON-NEYMAN INTERVAL 
+## 
+## When opposition is INSIDE the interval [0.04, 1.79], the slope of period is
+## p < .05.
+## 
+## Note: The range of observed values of opposition is [0.00, 1.00]
+## 
+## SIMPLE SLOPES ANALYSIS 
+## 
+## Slope of period when opposition = 0.00 (0): 
+## 
+##    Est.   S.E.   z val.      p
+## ------- ------ -------- ------
+##   -0.02   0.01    -1.77   0.08
+## 
+## Slope of period when opposition = 1.00 (1): 
+## 
+##    Est.   S.E.   z val.      p
+## ------- ------ -------- ------
+##   -0.07   0.03    -2.33   0.02
+```
+
+The same was observed when `twitter` variable (between Reddit and Twitter) is replaced with `opposition` (between incumbent and opposition) the predictor `x` variable. The effects of the political parties on the relationship of `period` and `bing` was slightly greater at the earlier part of the election process.
+
+##### Three-way interaction
+
+```
+logistic_interactE3w <- glm(bing ~ twitter * opposition * period, 
+                           data = df_log, family = binomial(link = "logit"))
+
+interact_plot(logistic_interactE3w, pred = "period", modx = "opposition", mod2 = "twitter",   
+              modx.labels = c("Incumbent", "Opposition"), mod2.labels = c("Reddit", "Twitter"),
+              interval = TRUE, int.width = 0.95, 
+              colors = c("red", "blue"),
+              vary.lty = TRUE, line.thickness = 1, legend.main = "Political Party") + 
+  scale_x_continuous(breaks = 1:3, label = c("First Phase", "Second Phase", "Third Phase")) +
+  labs(title = "Singapore Parliamentary General Elections 2020",
+       subtitle = "The interaction of election period, political party and platform\non the probability of positive bing sentiment",
+       x = "Election Period",
+       y = "Probability of Positive bing Sentiment",
+       caption = "Source: Reddit & Twitter")
+```
+
+```
+sim_slopes(logistic_interactE3w, pred = period, modx = opposition, mod2 = twitter, johnson_neyman = TRUE)
+```
+
+```
+## ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ While twitter (2nd moderator) = 0.00 (0) ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ 
+## 
+## JOHNSON-NEYMAN INTERVAL 
+## 
+## When opposition is OUTSIDE the interval [0.15, 0.83], the slope of period
+## is p < .05.
+## 
+## Note: The range of observed values of opposition is [0.00, 1.00]
+## 
+## SIMPLE SLOPES ANALYSIS 
+## 
+## Slope of period when opposition = 0.00 (0): 
+## 
+##    Est.   S.E.   z val.      p
+## ------- ------ -------- ------
+##   -0.05   0.01    -3.42   0.00
+## 
+## Slope of period when opposition = 1.00 (1): 
+## 
+##   Est.   S.E.   z val.      p
+## ------ ------ -------- ------
+##   0.09   0.04     2.19   0.03
+## 
+## ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ While twitter (2nd moderator) = 1.00 (1) ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ 
+## 
+## JOHNSON-NEYMAN INTERVAL 
+## 
+## When opposition is OUTSIDE the interval [0.00, 0.49], the slope of period
+## is p < .05.
+## 
+## Note: The range of observed values of opposition is [0.00, 1.00]
+## 
+## SIMPLE SLOPES ANALYSIS 
+## 
+## Slope of period when opposition = 0.00 (0): 
+## 
+##   Est.   S.E.   z val.      p
+## ------ ------ -------- ------
+##   0.07   0.03     1.98   0.05
+## 
+## Slope of period when opposition = 1.00 (1): 
+## 
+##    Est.   S.E.   z val.      p
+## ------- ------ -------- ------
+##   -0.18   0.04    -4.18   0.00
+```
+
+In this three-way interaction model, across the election period, the incumbent has decreased values of `bing` while the opposition has increased values of `bing` on Reddit. However, Twitter has an opposite outcome for either of the political parties, i.e. incumbent has increased values of `bing` and opposition has decreased values of `bing` across the election period. The difference of `bing` values between incumbent and opposition is higher on Twitter.
+
+#### 2015 vs 2020 Elections
+
+To gain a well-rounded understanding of Singapore Elections, we cannot rely on data from one election alone. We need data from multiple elections to compare and contrast against one another. We have managed to obtain some Reddit data from the 2015 Singapore General Election. The dataset was reshaped and the trends in sentiment for both the 2015 and 2020 Singapore General Elections were plotted below.
+
+```
+two_elections <- df %>%
+  filter(platform == "reddit") %>%
+  mutate(year = case_when(
+    !is.na(period_2015) ~ "2015",
+    !is.na(period_2020) ~ "2020")) %>%
+  unite(col = "period", period_2015:period_2020, na.rm = TRUE, remove = FALSE)
+
+two_elections %>%
+  group_by(date, year, period, pol_party) %>%
+  summarize(afinn_value = mean(afinn_value)) %>%
+  ggplot(aes(x = date, y = afinn_value, group = pol_party, col = pol_party)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "2015 vs 2020 Elections",
+       x = "Period",
+       y = "Sentiment",
+       col = "Political Party",
+       caption = "Source: Reddit") +
+  facet_grid(~year, scales = "free_x") +
+  theme(axis.text.x = element_text(angle = 45)) +
+  scale_x_date(date_breaks = "2 days")
+```
+
+A One-way Between-Groups ANOVA was conducted to analyse the effect of `year` on overall sentiments across both elections. There was a significant difference in sentiments between the two elections, with the 2015 election more negative than the 2020 election.
+
+```
+year_model <- aov(afinn_value ~ year, data = two_elections) %>%
+  tidy()
+
+two_elections %>%
+  group_by(year) %>%
+  summarize(afinn_value = mean(afinn_value))
+```
+
+### Interpretation of the Results
+
+From our data science project, we found the following:
+
+1. Generally, the election-related comments made on Reddit are more negatively-toned than Twitter. The negativity worsened at the second phase.
+
+2. Second phase of the election process is marked by increasingly negative sentiments compared to first and third phases. In terms of discrete categories of emotions, towards the end of the second phase and throughout the third phase is where discussions are more heated up, with many more instances of various sentiments showing up in the data. During this particular period, the opposition parties experienced an increase in the number of positively-toned sentiments (e.g. anticipation, joy, trust, etc.) relative to the negatively-toned sentiments (e.g. sadness, disgust, fear, etc.) of the same period.
+
+3. Comments made concerning the incumbent party was more negatively-toned than the opposition parties.
+
+4. On the whole, Reddit users were more negative about the 2015 Singapore General Election than the 2020 Election. This could be attributed to Minister Mentor Lee Kuan Yew’s passing in 2015. Singapore was in a state of mourning and this could have contributed to the negative sentiments on Reddit. Following the majority win by the incumbent party, our plot reflects a change in positive sentiments for the incumbent party at the third phase. Perhaps Singaporeans were relieved that the status quo was maintained when they were at the most vulnerable.
+
+### Implications
+
+Analyses of the Reddit and Twitter data corroborates our thesis. There has been increasing dissatisfaction with the ruling of the incumbent party by Singaporeans. The findings of our project has lend credence to this view, providing evidence that Singaporeans have taken to social media platforms such as Reddit and Twitter to voice their dissatisfaction with the incumbent party. Of note is the negative sentiments for the Opposition parties as well. This contributes some sort of ambivalence or noise into our results. A cursory review of social media platforms would attribute this to the “Internet Brigade (IB)” who are pro-incumbent party and would openly express negative sentiments on opposition parties. Further analysis in this area is needed to tease out the difference.
+
+We have also learned that social media platforms differ in the extent of sentiments expressed. Twitter, as a platform, is more positively-toned compared to Reddit. One plausible suggestion for this outcome is the presence of news pertaining to the elections on twitter. News adopt a neutral tone, which could contribute to the lift in negative sentiments to a less-negative tone.
+
+### Limitations & Future Directions
+
+There are some limitations in our data science project. First, we do not possess sufficient data for the 2015 Singapore General Election. There is a limitation to scrapping historical data from Twitter and we do not have any Twitter data from the 2015 Singapore General Election. While we do have some Reddit data for the 2015 Singapore General Election, this is insufficient as we explicitly filtered for election-related comments. We would have missed out on keywords that were tangentially related to the 2015 Elections. Even then, the 2015 General Election was an atypical election. At that point, the passing of Minister Mentor Lee Kuan Yew could have influenced the results positively for the incumbent party.
+
+Second, the regular expressions used to differentiate comments concerning the incumbent party and the opposition parties are not intelligent enough to differentiate comments that include both parties in a single sentence. As a result, mentions of both parties are assigned to the incumbent party due to how our code is structured. Further research into this area could add additional nuance to our results.
+
+Future research could consider including the Eat-Drink-Man-Woman (EDMW) subforum from the HardwareZone (HWZ) forum. This subforum is another avenue for Singaporeans to express their political views during the election period. Hence, comparisons could then be made across three platforms (i.e. Reddit, Twitter and HWZ EDMW subforum).
+
+### Contribution Statement
+
+Combined:
+
+* Election process timeline chart
+* Regular expressions to use to extract election posts
+* Cleaned up and simplified script chunks to tidyverse way
+
+David’s contributions:
+
+* Scraping and cleaning the Singapore subreddit data
+* Problem Statement and Research Questions
+* Researched and implemented Chatter plots to visualise word frequency data with emotional valence of terms used
+* Shiny app
+* ANOVA models
+* Interpretation of the Results and Implications
+* Limitations and Future Directions
+
+Fabian’s contributions:
+
+* Scraping and cleaning the Twitter data
+* Explanation of the Election Process
+* Scraping historical election results data to visualise percentage of votes and voters turnout
+* Comparison across three sentiment dictionaries
+* Incumbent vs Opposition AFINN Sentiment Plots
+* Logistic Regression models
+* Text formatting and language
