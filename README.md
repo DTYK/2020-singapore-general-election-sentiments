@@ -7,7 +7,7 @@
 
 The Parliament in Singapore may be dissolved before the expiry of its five-year term by the President on the advice of the Prime Minister. The general election must be held within three months of the Parliament’s dissolution. There are two types of constituency or electoral division: single member constituency (SMC) and group representation constituency (GRC). SMC, as the name suggests, has only one member of parliament (MP), while GRC has three to six MPs. The GRC scheme was introduced in the 1988 general election to ensure that minority groups are represented in Parliament.<sup>[1](#footnote1)</sup>
 
-Below are the percentage of votes between incumbent and opposition, and of voters turnout for parliamentary general elections between 1988 (when GRC scheme is introduced) and 2020. Data for 2015 and earlier are scraped from Data.gov.sg using CKAN API while data for 2020 is scraped from Wikipedia (which is sourced from Elections Department Singapore and Channel News Asia) using rvest package.
+Below are the percentage of votes between incumbent and opposition, and of voters turnout for parliamentary general elections between 1988 (when GRC scheme is introduced) and 2020. Data for 2015 and earlier are scraped from Data.gov.sg using CKAN API while data for 2020 is scraped from Wikipedia (which is sourced from Elections Department Singapore and Channel News Asia) using `rvest` package.
 
 <img src="/image/ge_plot.png" width="500">
 
@@ -283,7 +283,7 @@ Next, we used Q-Q plots to identify whether the `afinn_value` variable is normal
 
 Levene’s Test for Homogeneity of Variance was conducted on the dataset. The assumption for homogeneity was violated.
 
-<img src="/image/levenes-test.png" width="500">
+<img src="/image/levenes-test.png" width="250">
 
 ANOVA models remain robust even if the assumption of homogeneity of variance is violated. Robustness is dependent on the sample sizes across groups.<sup>[7](#footnote7)</sup> In our case, the sample sizes across groups are not similar to one another. Hence, we have to use a non-parametric equivalent to the 3-way between-groups ANOVA.
 
@@ -402,7 +402,7 @@ To investigate `bing` sentiment data, logistic regression was used to take a loo
 
 The main effects are clearly significant with each independent variable (i.e. `platform`, `period` and `pol_party`) contributing to the model. Reddit (`twitter = 0`) is slightly more negative than Twitter (`twitter = 1`), while Opposition has more positive sentiments than Incumbent in either social media platforms. The sentiments generally became gradually negative across the election period.
 
-<img src="/image/LR-main-effects.png" width="500">
+<img src="/image/LR-main-effects.png" width="250">
 
 <img src="/image/prob-of-positive-bing.png" width="500">
 
@@ -410,15 +410,15 @@ The main effects are clearly significant with each independent variable (i.e. `p
 
 We explore the interactions between two dummy variables: `twitter` and `opposition`. From the output, the interaction effect between the two variables is significant (p = 0.005).
 
-<img src="/image/LR-interaction-effects.png" width="500">
+<img src="/image/LR-interaction-effects.png" width="250">
 
 ##### Model comparison
 
 Main effects and interaction effects models are compared. It shows that Model 2 (Interaction Effects Model) is slightly better than Model 1 (Main Effects Model).
 
-<img src="/image/LR-model-comparison-1.png" width="500">
+<img src="/image/LR-model-comparison-1.png" width="250">
 
-<img src="/image/LR-model-comparison-2.png" width="500">
+<img src="/image/LR-model-comparison-2.png" width="250">
 
 ##### Probing interactions
 
@@ -575,7 +575,7 @@ To gain a well-rounded understanding of Singapore Elections, we cannot rely on d
 
 A One-way Between-Groups ANOVA was conducted to analyse the effect of `year` on overall sentiments across both elections. There was a significant difference in sentiments between the two elections, with the 2015 election more negative than the 2020 election.
 
-<img src="/image/sentiment-across-years.png" width="500">
+<img src="/image/sentiment-across-years.png" width="250">
 
 ### Interpretation of the Results
 
