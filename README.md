@@ -103,19 +103,6 @@ reddits <- reddits %>%
   select(date, comment)
 ```
 
-The following shows the Reddit raw dataset:
-
-```
-glimpse(reddits)
-```
-
-```
-## Rows: 169,031
-## Columns: 2
-## $ date    <date> 2020-06-21, 2020-06-21, 2020-06-21, 2020-06-21, 2020-06-21...
-## $ comment <chr> "Govt gonna get more than their $600 per person back from t...
-```
-
 The Reddit data contains threads on all manner of subjects. Using regular expressions, we extracted out rows that include comments on election-related information only. All comments were converted to lowercase.
 
 ```
@@ -315,7 +302,7 @@ Finally, both Reddit and Twitter data were merged together, and the final `df` d
 
 #### Chatter plots
 
-Chatter plots were used to display the most frequently occurring words against their emotional valence.
+Chatter plots were used to display the most frequently occurring words against their emotional valence.<sup>[2](#footnote2)</sup>
 
 ##### Reddit
 
@@ -389,9 +376,9 @@ twitter_top50 %>%
 
 Twitter has top 50 words that have more balanced sentiments between positive and negative compared to Reddit.
 
-Both have the most word used in the posts - “winning”. The context of this most used word is likely on the hope in winning the constituency the candidates that are contesting in. Moving later into the election process, the winning candidates would be happy, and the democracy in Singapore has made progress with the official appointment of the Leader of the Opposition. Both words “happy” and “progress” are the other top few positive words in Twitter.
+Both have the most word used in the posts - “winning”. The context of this most used word is likely on the hope in winning the constituency the candidates that are contesting in. Moving later into the election process, the winning candidates would be happy, and the democracy in Singapore has made progress with the official appointment of the Leader of the Opposition.<sup>[3](#footnote3)</sup> Both words “happy” and “progress” are the other top few positive words in Twitter.
 
-In contrast, the top few most negative words in Twitter are “bad”, “lost” and “disappointed”. These words are likely due to candidates that are hopeful to win but did not in the end. This may also be related to another GRC lost by the incumbent.
+In contrast, the top few most negative words in Twitter are “bad”, “lost” and “disappointed”. These words are likely due to candidates that are hopeful to win but did not in the end. This may also be related to another GRC lost by the incumbent.<sup>[4](#footnote4)</sup>
 
 #### Comparison between Three Sentiment Dictionaries
 
@@ -517,7 +504,7 @@ tweets_sentiments %>%
 
 ![Incumbent vs Opposition on Twitter (AFINN)](/image/incumbent-vs-opposition-twitter-afinn.png)
 
-Based on the AFINN sentiment plots, the trend for the opposition is generally similar between Reddit and Twitter with a dip to negative between 4 and 5 July. This is probably due to the police investigation on Workers’ Party candidate Raeesah Khan over alleged online comments on race and religion. There is also a dip to negative for the incumbent party in Twitter, due to the withdrawal of PAP candidate Ivan Lim after allegations about his past conduct and behaviour.
+Based on the AFINN sentiment plots, the trend for the opposition is generally similar between Reddit and Twitter with a dip to negative between 4 and 5 July. This is probably due to the police investigation on Workers’ Party candidate Raeesah Khan over alleged online comments on race and religion.<sup>[5](#footnote5)</sup> There is also a dip to negative for the incumbent party in Twitter, due to the withdrawal of PAP candidate Ivan Lim after allegations about his past conduct and behaviour.<sup>[6](#footnote6)</sup>
 
 #### Sentiment plots between incumbent and opposition (NRC lexicon)
 
@@ -644,7 +631,7 @@ df %>%
 
 ![Levene's Test](/image/levenes-test.png)
 
-ANOVA models remain robust even if the assumption of homogeneity of variance is violated. Robustness is dependent on the sample sizes across groups. In our case, the sample sizes across groups are not similar to one another. Hence, we have to use a non-parametric equivalent to the 3-way between-groups ANOVA.
+ANOVA models remain robust even if the assumption of homogeneity of variance is violated. Robustness is dependent on the sample sizes across groups.<sup>[7](#footnote7)</sup> In our case, the sample sizes across groups are not similar to one another. Hence, we have to use a non-parametric equivalent to the 3-way between-groups ANOVA.
 
 ```
 df %>%
@@ -657,7 +644,7 @@ df %>%
 
 Functions from the `WRS2` package will be used for the subsequent modelling process as our assumption of homogeneity has been violated. The package offers robust ANOVA for situations such as ours.
 
-The `t3way` function from the `WRS2` package was used as a robust 3-Way Between-Groups ANOVA alternative. The results showed that there was a significant three-way interaction between `platform`, `period_2020`, and `pol_party`, p = 0.0010.
+The `t3way` function from the `WRS2` package was used as a robust 3-Way Between-Groups ANOVA alternative.<sup>[8](#footnote8)</sup> The results showed that there was a significant three-way interaction between `platform`, `period_2020`, and `pol_party`, p = 0.0010.
 
 There was a significant two-way interaction between `platform` and `period_2020`, p = 0.0270. There was a significant two-way interaction between `platform` and `pol_party`, p = 0.0010. There was no significant interaction between `period_2020` and `pol_party`.
 
@@ -693,13 +680,13 @@ anova.model
 
 #### Post-hoc tests
 
-A significant three-way interaction could be followed up with the following post-hoc tests:
+A significant three-way interaction could be followed up with the following post-hoc tests<sup>[9](#footnote9)</sup>:
 
 * Two-way interaction at each level of the third variable
 * Main effects of each variable
 * Pairwise comparisons of each variable that has more than two levels (e.g. period_2020)
 
-A three-way interaction suggests that one, or more, two-way interactions differ across the levels of a third variable. In our case, it could mean that there are differences in the interaction of `period_2020` and `platform` at each level of `pol_party`. We could visualise the three-way interaction as follows. From eye-balling the plot, comments made on Twitter were generally more positive than on Reddit, with comments made specifically on the oppositional parties more positive relative to the incumbent party.
+A three-way interaction suggests that one, or more, two-way interactions differ across the levels of a third variable.<sup>[10](#footnote10)</sup> In our case, it could mean that there are differences in the interaction of `period_2020` and `platform` at each level of `pol_party`. We could visualise the three-way interaction as follows. From eye-balling the plot, comments made on Twitter were generally more positive than on Reddit, with comments made specifically on the oppositional parties more positive relative to the incumbent party.
 
 ![Three-way Interactions](/image/three-way-interactions.png)
 
@@ -1040,4 +1027,13 @@ Fabian’s contributions:
 
 ### References
 
-<a name="footnote1">1</a>:: Election Department Singapore
+<a name="footnote1">1</a>: [Election Department Singapore](www.eld.gov.sg/)
+<a name="footnote2">2</a>: [RIP wordclouds, long live CHATTERPLOTS](https://towardsdatascience.com/rip-wordclouds-long-live-chatterplots-e76a76896098)
+<a name="footnote3">3</a>: [GE2020: WP chief Pritam Singh says he looks forward to serving as Leader of the Opposition](https://www.channelnewsasia.com/news/singapore/ge2020-wp-chief-pritam-singh-says-he-looks-forward-to-serving-as-12924456)
+<a name="footnote4">4</a>: [PAP lost the youth vote in Sengkang GRC](https://mothership.sg/2020/07/pap-lost-sengkang-grc-why/)
+<a name="footnote5">5</a>: [Police investigating WP candidate Raeesah Khan over alleged online comments on race, religion](https://www.channelnewsasia.com/news/singapore/raeesah-khan-workers-party-police-reports-race-ge2020-sengkang-12903248)
+<a name="footnote6">6</a>: [Singapore GE 2020: PAP new face Ivan Lim withdraws from election following allegations about his past behaviour](https://www.straitstimes.com/singapore/singapore-ge-2020-pap-new-face-ivan-lim-withdraws-as-a-candidate)
+<a name="footnote7">7</a>: [The Problem with Using Tests for Statistical Assumptions](https://www.theanalysisfactor.com/the-problem-with-tests-for-statistical-assumptions/)
+<a name="footnote8">8</a>: [WRS2: A Collection of Robust Statistical Methods](https://cran.r-project.org/web/packages/WRS2/index.html)
+<a name="footnote9">9</a>: [ANOVA in R](https://www.datanovia.com/en/lessons/anova-in-r/)
+<a name="footnote10">10</a>: [FAQ How Can I Understand A Three-way Interaction In ANOVA?](https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faqhow-can-i-understand-a-three-way-interaction-in-anova/)
